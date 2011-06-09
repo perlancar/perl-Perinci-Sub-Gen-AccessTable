@@ -19,7 +19,11 @@ $SPEC{gen_read_table_func} = {
 
 Data is either an AoH or AoA. Or you can also pass a Perl subroutine, in which
 case it will be called when data is needed and is expected to return an AoH or
-AoA.
+AoA. The subroutine will be called with arguments passed to the generated
+function, to let it do filtering/ordering/paging beforehand for efficiency.
+Either way, the generated function will still apply filtering/ordering/paging to
+the data returned by this subroutine, so the subroutine can choose to pass the
+complete table anyway.
 
 In the future, a DBI handle can also be passed.
 
