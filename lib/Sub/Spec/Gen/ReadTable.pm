@@ -156,14 +156,14 @@ _
     },
 };
 sub gen_read_table_func {
-    my %args = @_;
+    my %margs = @_;
 
     # XXX schema
-    my $table_data = $args{table_data}
+    my $table_data = $margs{table_data}
         or return [400, "Please specify table_data"];
     _is_aoa($table_data) or _is_aoh($table_data) or ref($table_data) eq 'CODE'
         or return [400, "Invalid table_data: must be AoA or AoH or function"];
-    my $table_spec = $args{table_spec}
+    my $table_spec = $margs{table_spec}
         or return [400, "Please specify table_spec"];
     ref($table_spec) eq 'HASH'
         or return [400, "Invalid table_spec: must be a hash"];
@@ -311,11 +311,67 @@ _
             }];
         }
     }
+    #my %a2c = reverse %c2a;
 
     # normalize args
+    while (my ($k, $v) = each %{$func_spec->{args}}) {
+        $func_spec->{args}{$k} = _parse_schema($v);
+    }
 
     my $func = sub {
+        my %fargs = @_;
         my $hints = {};
+
+        # XXX schema
+
+        my @columns = keys %{$table_spec->{columns}};
+        my @requested_fields;
+        my $show_field_names = $fargs{show_field_names};
+        if ($fargs{detail}) {
+            @requested_fields = [@columns];
+            $show_field_names //= 1;
+        } elsif ($fargs{fields}) {
+            @requested_fields = [@{ $fargs{fields} }];
+            $show_field_names //= 1;
+        } else {
+            @requested_fields = ($table_spec->{pk});
+            $show_field_names //= 0;
+        }
+        for (@requested_fields) {
+            return [400, "Unknown field $_"] unless $_ ~~ @columns;
+        }
+        $hints->{requested_fields} = \@requested_fields;
+
+        my @filter_fields;
+        for my $a (grep {$table_spec->{columns}{$_}{type} eq 'bool'}) {
+            if (defined $fargs{$a}) {
+            }
+        }
+        $hints->{filter_fields} = \@sort_fields;
+
+        my @sort_fields;
+        if ($fargs{sort}) {
+        }
+        $hints->{sort_fields} = \@sort_fields;
+
+        @mentioned_fields =
+            keys %{{ map {$_=>1} @requested_fields,
+                         @filter_fields, @sort_fields }};
+        $hints->{mentioned_fields} = \@mentioned_fields;
+
+        if (_is_aoa($data)) {
+        } elsif (_is_aoh($data)) {
+        } elsif (ref($data) eq 'CODE') {
+        }
+
+        # retrieve data
+
+        # perform filtering
+        # XXX count?
+        # perform ordering
+        # perform paging
+
+        # return data
     };
 
     [200, "OK", {spec=>$func_spec, code=>$func}];
