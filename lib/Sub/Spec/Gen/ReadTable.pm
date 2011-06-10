@@ -80,7 +80,9 @@ to be designated as the primary key. Currently only single-column PK is allowed.
 
 A Sah schema with these required clauses: column_index (an integer starting from
 0 that specifies position of column in the data, especially required with AoA
-data), column_sortable (a boolean stating whether column can be sorted).
+data) and these optional clauses: column_sortable (a boolean stating whether
+column can be sorted, default is true), column_filterable (a boolean stating
+whether column can be mentioned in filter options).
 
 * Resulting function
 
@@ -236,6 +238,8 @@ _
     my %c2a; # foo -> foo, q -> q_field (clashes with arg name)
     for my $cname (keys %{$table_spec->{columns}}) {
         my $cspec = _parse_schema($table_spec->{columns}{$cname});
+        my $cf = $cspec->{attr_hashes}[0]{column_filterable};
+        next if defined($cf) && !$cf;
         my $a = $cname;
         if (exists $func_spec->{args}{$a}) {
             $a = "${a}_field";
