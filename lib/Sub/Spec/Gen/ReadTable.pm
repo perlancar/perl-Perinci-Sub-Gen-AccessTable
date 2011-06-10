@@ -8,7 +8,25 @@ use Log::Any '$log';
 
 use Sub::Spec::Utils; # temp, for _parse_schema
 
+use Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT_OK = qw(gen_read_table_func);
+
 our %SPEC;
+
+sub _parse_schema {
+    Sub::Spec::Utils::_parse_schema(@_);
+}
+
+sub _is_aoa {
+    my $data = shift;
+    ref($data) eq 'ARRAY' && (!@$data || ref($data->[0]) eq 'ARRAY');
+}
+
+sub _is_aoh {
+    my $data = shift;
+    ref($data) eq 'ARRAY' && (!@$data || ref($data->[0]) eq 'HASH');
+}
 
 $SPEC{gen_read_table_func} = {
     summary => 'Generate function (and its spec) to read table data',
@@ -24,11 +42,11 @@ description afterwards.
 
 _
     args => {
-        data => ['any*' => {
+        table_data => ['any*' => {
             summary => 'Data',
             description => <<'_',
 
-Data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
+Table data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
 below).
 
 Passing a subroutine lets you fetch data dynamically. The subroutine will be
@@ -55,8 +73,8 @@ _
             description => <<'_',
 
 A hashref with these required keys: columns, pk. Columns is a hashref of column
-specification with column name as keys, while pk specifies which column is to be
-designated as the primary key. Currently only single-column PK is allowed.
+specification with column name as keys, while table_pk specifies which column is
+to be designated as the primary key. Currently only single-column PK is allowed.
 
 * Column specification
 
@@ -107,7 +125,7 @@ A filtering option. By default, all fields will be searched using simple
 case-insensitive string search. In the future, a method to customize searching
 will be allowed.
 
-** filter arguments
+** Filter arguments
 
 They will be generated for each column, except when column has
 'column_filterable' clause set to false.
@@ -125,7 +143,7 @@ it will be suffixed with '_field' (e.g. *q_field* or *sort_field*).
 
 *** "FIELD" string argument for each str field
 
-*** "FIELD_contains" string argument for each str field
+*** "FIELD_contains" string argument for each str field (not implemented)
 
 *** "FIELD_match" and "FIELD_not_match" regex argument for each str field
 
@@ -140,15 +158,167 @@ _
 sub gen_read_table_func {
     my %args = @_;
 
-    my $spec = {
-        summary => {},
-        args => {},
+    # XXX schema
+    my $table_data = $args{table_data}
+        or return [400, "Please specify table_data"];
+    _is_aoa($table_data) or _is_aoh($table_data) or ref($table_data) eq 'CODE'
+        or return [400, "Invalid table_data: must be AoA or AoH or function"];
+    my $table_spec = $args{table_spec}
+        or return [400, "Please specify table_spec"];
+    ref($table_spec) eq 'HASH'
+        or return [400, "Invalid table_spec: must be a hash"];
+
+    my $func_spec = {
+        summary => "",
+        description => "",
+        args => {
+            show_field_names => ['bool' => {
+                arg_category => 'field selection',
+                summary => 'Show field names in result (as hash/assoc)',
+                description => <<'_',
+
+When off, will return an array of values without field names (array/list).
+
+Default is off, will be turned on by default when 'fields' or 'detail' options
+are specified.
+
+_
+            }],
+            detail => ['bool' => {
+                arg_category => 'field selection',
+                summary => 'Return detailed data (all fields)',
+                default => 0,
+            }],
+            fields => ['array' => {
+                of => 'str*',
+                arg_category => 'field selection',
+                summary => 'Select fields to return',
+                description => <<'_',
+
+When off, will return an array of values without field names (array/list).
+
+Default is off, will be turned on by default when 'fields' or 'detail' options
+are specified.
+
+_
+            }],
+            sort => ['str' => {
+                arg_category => 'order',
+                summary => 'Order data according to certain fields',
+                description => <<'_',
+
+A list of field names separated by comma. Each field can be prefixed with '-' to
+specify descending order instead of the default ascending.
+
+_
+            }],
+            random => ['bool' => {
+                arg_category => 'order',
+                summary => 'If on, return result in random order',
+                default => 0,
+            }],
+            result_limit => ['int' => {
+                arg_category => 'paging',
+                summary => 'Only return a certain number of results',
+            }],
+            result_start => ['int' => {
+                arg_category => 'paging',
+                summary => 'Only return results from a certain position',
+                default => 1,
+            }],
+            q => ['str' => {
+                arg_category => 'filter',
+                summary => 'Filter using string matching',
+            }],
+        },
     };
 
-    my $code = sub {
+    my %c2a; # foo -> foo, q -> q_field (clashes with arg name)
+    for my $cname (keys %{$table_spec->{columns}}) {
+        my $cspec = _parse_schema($table_spec->{columns}{$cname});
+        my $a = $cname;
+        if (exists $func_spec->{args}{$a}) {
+            $a = "${a}_field";
+            if (exists $func_spec->{args}{$a}) {
+                return [400, "Clash of column name with arg name: $a"];
+            }
+        }
+        $c2a{$cname} = $a;
+        my $t = $cspec->{type};
+        if ($t eq 'bool') {
+            return [400, "Clash of $t filter argument: $a"]
+                if $func_spec->{args}{$a};
+            $func_spec->{args}{$a} = ['bool' => {
+                summary => "Only return results having a true $a value",
+                arg_category => 'filter',
+                default => 0,
+            }];
+        }
+        if ($t eq 'set') {
+            return [400, "Clash of $t filter argument: has_$a"]
+                if $func_spec->{args}{"has_$a"};
+            $func_spec->{args}{"has_$a"} = ['array' => {
+                of => 'str*',
+                arg_category => 'filter',
+                summary => "Only return results having ".
+                    "specified values in $a",
+            }];
+            return [400, "Clash of $t filter argument: lacks_$a"]
+                if $func_spec->{args}{"lacks_$a"};
+            $func_spec->{args}{"lacks_$a"} = ['array' => {
+                of => 'str*',
+                arg_category => 'filter',
+                summary => "Only return results not having ".
+                    "specified values in $a",
+            }];
+        }
+        if ($t =~ /(?:int|float|str)/) {
+            return [400, "Clash of $t filter argument: min_$a"]
+                if $func_spec->{args}{"min_$a"};
+            $func_spec->{args}{"min_$a"} = [$t => {
+                summary => "Only return results having ".
+                    "a certain minimum value of $a",
+                arg_category => 'filter',
+            }];
+            return [400, "Clash of $t filter argument: max_$a"]
+                if $func_spec->{args}{"max_$a"};
+            $func_spec->{args}{"max_$a"} = [$t => {
+                summary => "Only return results having ".
+                    "a certain maximum value of $a",
+                arg_category => 'filter',
+            }];
+        }
+        if ($t eq 'str') {
+            return [400, "Clash of $t filter argument: $a"]
+                if $func_spec->{args}{$a};
+            $func_spec->{args}{$a} = [$t => {
+                summary => "Only return results having certain value of $a",
+                arg_category => 'filter',
+            }];
+            return [400, "Clash of $t filter argument: ${a}_match"]
+                if $func_spec->{args}{"${a}_match"};
+            $func_spec->{args}{"${a}_match"} = [$t => {
+                summary => "Only return results with $a matching ".
+                    "specified regex",
+                arg_category => 'filter',
+            }];
+            return [400, "Clash of $t filter argument: ${a}_not_match"]
+                if $func_spec->{args}{"${a}_not_match"};
+            $func_spec->{args}{"${a}_not_match"} = [$t => {
+                summary => "Only return results with $a matching ".
+                    "specified regex",
+                arg_category => 'filter',
+            }];
+        }
+    }
+
+    # normalize args
+
+    my $func = sub {
+        my $hints = {};
     };
 
-    [200, "OK", {spec=>$spec, code=>$code}];
+    [200, "OK", {spec=>$func_spec, code=>$func}];
 }
 
 1;
@@ -174,10 +344,10 @@ In list_countries.pl:
  ];
 
  my $res = gen_read_table_func(
-     data => $countries,
+     table_data => $countries,
      table_spec => {
          summary => 'List of countries',
-         table_columns => {
+         columns => {
              id => ['int*' => {
                  summary => 'ISO 2-letter code for the country',
                  column_index => 0,
@@ -255,6 +425,11 @@ Currently only Perl data (AoH, AoA, subref) are supported.
 This module uses L<Log::Any> for logging framework.
 
 This module's functions has L<Sub::Spec> specs.
+
+
+=head1 FUNCTIONS
+
+None are exported by default, but they are exportable.
 
 
 =head1 FAQ
