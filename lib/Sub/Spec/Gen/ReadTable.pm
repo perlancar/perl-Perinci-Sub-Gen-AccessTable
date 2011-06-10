@@ -12,22 +12,47 @@ our %SPEC;
 
 $SPEC{gen_read_table_func} = {
     summary => 'Generate function (and its spec) to read table data',
-    description_fmt => 'org',
     description => <<'_',
 
-* Data
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, sorting, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-Data is either an AoH or AoA. Or you can also pass a Perl subroutine, in which
-case it will be called when data is needed and is expected to return an AoH or
-AoA. The subroutine will be called with arguments passed to the generated
-function, to let it do filtering/ordering/paging beforehand for efficiency.
-Either way, the generated function will still apply filtering/ordering/paging to
-the data returned by this subroutine, so the subroutine can choose to pass the
-complete table anyway.
+The spec is pretty barebones currently. You can decorate with summary and
+description afterwards.
 
-In the future, a DBI handle can also be passed.
+_
+    args => {
+        data => ['any*' => {
+            summary => 'Data',
+            description => <<'_',
 
-* Table specification
+Data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
+below).
+
+Passing a subroutine lets you fetch data dynamically. The subroutine will be
+called with these arguments ($query, $hints) and is expected to return an AoA or
+AoH. $query is a hashref and is the arguments passed to the generated function
+(e.g. {random=>1, result_limit=>1, field1_match=>'foo'}). $hints is a hashref
+and provides some, well, hints about the query, e.g. 'mentioned_fields' which
+lists fields that are mentioned in either filtering arguments or fields or
+ordering, 'requested_fields' (fields mentioned in list of fields to be
+returned), 'sort_fields' (fields mentioned in sort arguments), 'filter_fields'
+(fields mentioned in filter arguments).
+
+The subroutine can do filtering/ordering/paging beforehand for efficiency, e.g.
+SELECT-ing from a DBI table using the appropriate columns, ORDER, WHERE, and
+LIMIT clauses. Either way, for consistency, the generated function will still
+apply filtering/ordering/paging to the data returned by this subroutine, so the
+subroutine can choose to pass the complete table data anyway.
+
+_
+        }],
+        table_spec => ['hash*' => {
+            summary => 'Table specification',
+            description_fmt => 'org',
+            description => <<'_',
 
 A hashref with these required keys: columns, pk. Columns is a hashref of column
 specification with column name as keys, while pk specifies which column is to be
@@ -109,22 +134,21 @@ it will be suffixed with '_field' (e.g. *q_field* or *sort_field*).
 *** "FIELD_ends_with" string argument for each str field (not implemented)
 
 _
-    args => {
-        data => ['any*' => {
-            summary => 'Data',
-        }],
-        table_spec => ['hash*' => {
-            summary => 'Table specification',
-            description => <<'_',
-
-See description for more details on table spec.
-
-_
         }],
     },
 };
 sub gen_read_table_func {
     my %args = @_;
+
+    my $spec = {
+        summary => {},
+        args => {},
+    };
+
+    my $code = sub {
+    };
+
+    [200, "OK", {spec=>$spec, code=>$code}];
 }
 
 1;
