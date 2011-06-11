@@ -107,14 +107,14 @@ _
         $col_specs->{$cname} = $cspec;
         my $cf = $cspec->{attr_hashes}[0]{column_filterable};
         next if defined($cf) && !$cf;
-        my $arg = $cname;
-        if (exists $func_spec->{args}{$arg}) {
-            $a = "${arg}_field";
-            if (exists $func_spec->{args}{$arg}) {
-                return [400, "Clash of column name with arg name: $arg"];
+        my $a = $cname;
+        if (exists $func_spec->{args}{$a}) {
+            $a = "${a}_field";
+            if (exists $func_spec->{args}{$a}) {
+                return [400, "Clash of column name with arg name: $a"];
             }
         }
-        $col2arg->{$cname} = $arg;
+        $col2arg->{$cname} = $a;
         my $t = $cspec->{type};
         if ($t eq 'bool') {
             return [400, "Clash of $t filter argument: $a"]
@@ -125,7 +125,7 @@ _
                 default => 0,
             }];
         }
-        if ($t eq 'set') {
+        if ($t eq 'array') {
             return [400, "Clash of $t filter argument: has_$a"]
                 if $func_spec->{args}{"has_$a"};
             $func_spec->{args}{"has_$a"} = ['array' => {
@@ -201,12 +201,11 @@ _
     }
 
     # normalize arg specs
+    #while (my ($k, $v) = each %{$func_spec->{args}}) {
+    #    $func_spec->{args}{$k} = _parse_schema($v);
+    #}
 
-    while (my ($k, $v) = each %{$func_spec->{args}}) {
-        $func_spec->{args}{$k} = _parse_schema($v);
-    }
-
-    ($func_spec, $col_specs, $col2arg);
+    [200, "OK", [$func_spec, $col_specs, $col2arg]];
 }
 
 sub __parse_query {
@@ -215,16 +214,15 @@ sub __parse_query {
 
     my @columns = keys %$col_specs;
     my @requested_fields;
-    my $show_field_names = $args->{show_field_names};
     if ($args->{detail}) {
         @requested_fields = [@columns];
-        $show_field_names //= 1;
+        $args->{show_field_names} //= 1;
     } elsif ($args->{fields}) {
         @requested_fields = [@{ $args->{fields} }];
-        $show_field_names //= 1;
+        $args->{show_field_names} //= 1;
     } else {
         @requested_fields = ($table_spec->{pk});
-        $show_field_names //= 0;
+        $args->{show_field_names} //= 0;
     }
     for (@requested_fields) {
         return [400, "Unknown field $_"] unless $_ ~~ @columns;
@@ -242,7 +240,7 @@ sub __parse_query {
         }
         push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
-    for my $c (grep {$col_specs->{$_}{type} eq 'set'} @columns) {
+    for my $c (grep {$col_specs->{$_}{type} eq 'array'} @columns) {
         my $a = $col2arg->{$c};
         my $exists;
         if (defined $args->{"has_$a"}) {
@@ -300,7 +298,6 @@ sub __parse_query {
 
     my @sort_fields;
     if ($args->{sort}) {
-
     }
     $query->{sort_fields} = \@sort_fields;
 
@@ -320,22 +317,80 @@ sub __gen_func {
 
         # XXX schema
 
-        # construct hints
         my $query = __parse_query(\%args, $table_spec, $col_specs, $col2arg);
 
-        if (_is_aoa($table_data)) {
-        } elsif (_is_aoh($table_data)) {
+        # retrieve data
+        my $data;
+        if (_is_aoa($table_data) || _is_aoh($table_data)) {
+            $data = $table_data;
         } elsif (ref($table_data) eq 'CODE') {
+            return [500, "BUG: Data function died: $@"]
+                unless eval { $data = $table_data->($query) };
+            return [500, "BUG: Data returned from function is not an array".
+                        ", please report to administrator"]
+                unless _is_aoa($table_data) || _is_aoh($table_data);
+        } else {
+            # this should be impossible, already checked earlier
+            die "BUG: Data is not an array";
         }
 
-        # retrieve data
+        # this will be the final result. currently, internally we always use
+        # hashref for rows and convert to array/scalar later when returning
+        # final data.
+        my @rows;
 
         # perform filtering
-        # XXX count?
+      ROW:
+        for my $row (@$data) {
+            if (ref($row) eq 'ARRAY') {
+                my $row_h = {};
+                for my $c (keys %$col_specs) {
+                    $row_h->{$c} = $row->[
+                        $col_specs->{$c}{attr_hashes}[0]{column_index}];
+                }
+                $row = $row_h;
+            }
+            for my $f (@{$query->{filters}}) {
+                my ($a, $c, $op, $opn) = @$f;
+                if ($op eq 'truth') {
+                    next ROW if $row->{$c} xor $opn;
+                } elsif ($op eq '~~') {
+                    for (@$opn) {
+                        next ROW unless $_ ~~ @{$row->{$c}};
+                    }
+                } elsif ($op eq '!~~') {
+                    for (@$opn) {
+                        next ROW if $_ ~~ @{$row->{$c}};
+                    }
+                } elsif ($op eq 'ge') {
+                    next ROW unless $row->{$c} ge $opn;
+                } elsif ($op eq '>=') {
+                    next ROW unless $row->{$c} >= $opn;
+                } elsif ($op eq 'le') {
+                    next ROW unless $row->{$c} le $opn;
+                } elsif ($op eq '<=') {
+                    next ROW unless $row->{$c} <= $opn;
+                } elsif ($op eq '=~') {
+                    next ROW unless $row->{$c} =~ $opn;
+                } elsif ($op eq '!~') {
+                    next ROW unless $row->{$c} !~ $opn;
+                } elsif ($op eq 'pos') {
+                    next ROW unless index($row->{$c}, $opn) >= 0;
+                } elsif ($op eq '!pos') {
+                    next ROW if index($row->{$c}, $opn) >= 0;
+                } else {
+                    die "BUG: Unknown op $op";
+                }
+            }
+            push @rows, $row;
+        }
+
         # perform ordering
+
         # perform paging
 
         # return data
+        [200, "OK", \@rows];
     };
 
     $func;
@@ -540,7 +595,7 @@ In list_countries.pl:
                  column_index => 2,
                  column_sortable => 1,
              }],
-             tags => ['set*' => {
+             tags => ['array*' => {
                  summary => 'Keywords/tags',
                  column_index => 3,
                  column_sortable => 0,
