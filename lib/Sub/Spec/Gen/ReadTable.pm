@@ -367,6 +367,8 @@ sub _gen_func {
         # final data.
         my @rows;
 
+        no warnings; # silence undef warnings when comparing row values
+
         # perform filtering
       ROW:
         for my $row (@$data) {
@@ -414,22 +416,21 @@ sub _gen_func {
         }
 
         # perform ordering
-        {
-            no warnings; # silence undef warnings
-            if (@{$query->{sorts}}) {
-                @rows = sort {
-                    for my $s (@{$query->{sorts}}) {
-                        my ($f, $op, $desc) = @$s;
-                        my $x = $desc * (
-                            $op eq 'cmp' ?
-                                $a->{$f} cmp $b->{$f} :
-                                    $a->{$f} <=> $b->{$f});
-                        return $x if $x != 0;
-                    }
-                    0;
-                } @rows;
-            }
+        if (@{$query->{sorts}}) {
+            @rows = sort {
+                for my $s (@{$query->{sorts}}) {
+                    my ($f, $op, $desc) = @$s;
+                    my $x = $desc * (
+                        $op eq 'cmp' ?
+                            $a->{$f} cmp $b->{$f} :
+                                $a->{$f} <=> $b->{$f});
+                    return $x if $x != 0;
+                }
+                0;
+            } @rows;
         }
+
+        use warnings;
 
         # perform paging
         if ($query->{result_start} > 1) {
