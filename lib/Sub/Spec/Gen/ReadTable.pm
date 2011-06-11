@@ -218,10 +218,10 @@ sub _parse_query {
     my @columns = keys %$col_specs;
     my @requested_fields;
     if ($args->{detail}) {
-        @requested_fields = [@columns];
+        @requested_fields = @columns;
         $args->{show_field_names} //= 1;
     } elsif ($args->{fields}) {
-        @requested_fields = [@{ $args->{fields} }];
+        @requested_fields = @{ $args->{fields} };
         $args->{show_field_names} //= 1;
     } else {
         @requested_fields = ($table_spec->{pk});
@@ -325,6 +325,7 @@ sub _parse_query {
     $query->{result_limit} = $args->{result_limit};
     $query->{result_start} = $args->{result_start} // 1;
 
+    $log->tracef("parsed query: %s", $query);
     [200, "OK", [$query]];
 }
 
@@ -452,20 +453,17 @@ sub _gen_func {
         my $pk = $table_spec->{pk};
       ROW2:
         for my $row (@rows) {
-            if (!$args{detail} || !$args{fields} && keys(%$row)==1) {
+            if (!$args{detail} && !$args{fields} && keys(%$row)==1) {
                 $row = $row->{$pk};
                 next ROW2;
             }
-            for (@columns) {
-                delete $row->{$_} unless $_ ~~ @{$query->{requested_fields}};
-            }
-            if (!$args{show_field_names}) {
-                my @row_a;
+            if ($args{show_field_names}) {
                 for (@columns) {
-                    my $i = $col_specs->{$_}{attr_hashes}[0]{column_index};
-                    $row_a[$i] = $row->{$_};
+                    delete $row->{$_}
+                        unless $_ ~~ @{$query->{requested_fields}};
                 }
-                $row = \@row_a;
+            } else {
+                $row = [map {$row->{$_}} @{$query->{requested_fields}}];
             }
         }
 
