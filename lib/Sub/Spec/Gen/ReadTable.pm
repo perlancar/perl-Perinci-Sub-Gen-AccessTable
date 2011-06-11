@@ -28,6 +28,264 @@ sub _is_aoh {
     ref($data) eq 'ARRAY' && (!@$data || ref($data->[0]) eq 'HASH');
 }
 
+sub _gen_spec {
+    my ($table_spec) = @_;
+
+    # add general arguments
+
+    my $func_spec = {
+        summary => "",
+        description => "",
+        args => {
+            show_field_names => ['bool' => {
+                arg_category => 'field selection',
+                summary => 'Show field names in result (as hash/assoc)',
+                description => <<'_',
+
+When off, will return an array of values without field names (array/list).
+
+Default is off, will be turned on by default when 'fields' or 'detail' options
+are specified.
+
+_
+            }],
+            detail => ['bool' => {
+                arg_category => 'field selection',
+                summary => 'Return detailed data (all fields)',
+                default => 0,
+            }],
+            fields => ['array' => {
+                of => 'str*',
+                arg_category => 'field selection',
+                summary => 'Select fields to return',
+                description => <<'_',
+
+When off, will return an array of values without field names (array/list).
+
+Default is off, will be turned on by default when 'fields' or 'detail' options
+are specified.
+
+_
+            }],
+            sort => ['str' => {
+                arg_category => 'order',
+                summary => 'Order data according to certain fields',
+                description => <<'_',
+
+A list of field names separated by comma. Each field can be prefixed with '-' to
+specify descending order instead of the default ascending.
+
+_
+            }],
+            random => ['bool' => {
+                arg_category => 'order',
+                summary => 'If on, return result in random order',
+                default => 0,
+            }],
+            result_limit => ['int' => {
+                arg_category => 'paging',
+                summary => 'Only return a certain number of results',
+            }],
+            result_start => ['int' => {
+                arg_category => 'paging',
+                summary => 'Only return results from a certain position',
+                default => 1,
+            }],
+            q => ['str' => {
+                arg_category => 'filter',
+                summary => 'Filter using string matching',
+            }],
+        },
+    };
+
+    # add filter arguments for each table column
+
+    my $col_specs = {};
+    my $col2arg = {};
+    for my $cname (keys %{$table_spec->{columns}}) {
+        my $cspec = _parse_schema($table_spec->{columns}{$cname});
+        $col_specs->{$cname} = $cspec;
+        my $cf = $cspec->{attr_hashes}[0]{column_filterable};
+        next if defined($cf) && !$cf;
+        my $arg = $cname;
+        if (exists $func_spec->{args}{$arg}) {
+            $a = "${arg}_field";
+            if (exists $func_spec->{args}{$arg}) {
+                return [400, "Clash of column name with arg name: $arg"];
+            }
+        }
+        $col2arg->{$cname} = $arg;
+        my $t = $cspec->{type};
+        if ($t eq 'bool') {
+            return [400, "Clash of $t filter argument: $a"]
+                if $func_spec->{args}{$a};
+            $func_spec->{args}{$a} = ['bool' => {
+                summary => "Only return results having a true $a value",
+                arg_category => 'filter',
+                default => 0,
+            }];
+        }
+        if ($t eq 'set') {
+            return [400, "Clash of $t filter argument: has_$a"]
+                if $func_spec->{args}{"has_$a"};
+            $func_spec->{args}{"has_$a"} = ['array' => {
+                of => 'str*',
+                arg_category => 'filter',
+                summary => "Only return results having ".
+                    "specified values in $a",
+            }];
+            return [400, "Clash of $t filter argument: lacks_$a"]
+                if $func_spec->{args}{"lacks_$a"};
+            $func_spec->{args}{"lacks_$a"} = ['array' => {
+                of => 'str*',
+                arg_category => 'filter',
+                summary => "Only return results not having ".
+                    "specified values in $a",
+            }];
+        }
+        if ($t =~ /(?:int|float|str)/) {
+            return [400, "Clash of $t filter argument: min_$a"]
+                if $func_spec->{args}{"min_$a"};
+            $func_spec->{args}{"min_$a"} = [$t => {
+                summary => "Only return results having ".
+                    "a certain minimum value of $a",
+                arg_category => 'filter',
+            }];
+            return [400, "Clash of $t filter argument: max_$a"]
+                if $func_spec->{args}{"max_$a"};
+            $func_spec->{args}{"max_$a"} = [$t => {
+                summary => "Only return results having ".
+                    "a certain maximum value of $a",
+                arg_category => 'filter',
+            }];
+        }
+        if ($t eq 'str') {
+            return [400, "Clash of $t filter argument: $a"]
+                if $func_spec->{args}{$a};
+            $func_spec->{args}{$a} = [$t => {
+                summary => "Only return results having certain value of $a",
+                arg_category => 'filter',
+            }];
+            return [400, "Clash of $t filter argument: ${a}_match"]
+                if $func_spec->{args}{"${a}_match"};
+            $func_spec->{args}{"${a}_match"} = [$t => {
+                summary => "Only return results with $a matching ".
+                    "specified regex",
+                arg_category => 'filter',
+            }];
+            return [400, "Clash of $t filter argument: ${a}_not_match"]
+                if $func_spec->{args}{"${a}_not_match"};
+            $func_spec->{args}{"${a}_not_match"} = [$t => {
+                summary => "Only return results with $a matching ".
+                    "specified regex",
+                arg_category => 'filter',
+            }];
+        }
+    }
+
+    # normalize arg specs
+
+    while (my ($k, $v) = each %{$func_spec->{args}}) {
+        $func_spec->{args}{$k} = _parse_schema($v);
+    }
+
+    ($func_spec, $col_specs, $col2arg);
+}
+
+sub __gen_hints {
+    my ($args, $table_spec, $col_specs, $col2arg) = @_;
+    my $hints = {};
+
+    my @columns = keys %$col_specs;
+    my @requested_fields;
+    my $show_field_names = $args->{show_field_names};
+    if ($args->{detail}) {
+        @requested_fields = [@columns];
+        $show_field_names //= 1;
+    } elsif ($args->{fields}) {
+        @requested_fields = [@{ $args->{fields} }];
+        $show_field_names //= 1;
+    } else {
+        @requested_fields = ($table_spec->{pk});
+        $show_field_names //= 0;
+    }
+    for (@requested_fields) {
+        return [400, "Unknown field $_"] unless $_ ~~ @columns;
+    }
+    $hints->{requested_fields} = \@requested_fields;
+
+    my @filter_fields;
+    for my $c (grep {$col_specs->{$_}{type} eq 'bool'} @columns) {
+        my $a = $col2arg->{$c};
+        if (defined $args->{$a}) {
+            push @filter_fields, $c;
+        }
+    }
+    for my $c (grep {$col_specs->{$_}{type} eq 'set'} @columns) {
+        my $a = $col2arg->{$c};
+        if (defined($args->{"has_$a"}) || defined($args->{"lacks_$a"})) {
+            push @filter_fields, $c;
+        }
+    }
+    for my $c (grep {$col_specs->{$_}{type} =~ /^(int|float|str)$/}
+                   @columns) {
+        my $a = $col2arg->{$c};
+        if (defined($args->{"min_$a"}) || defined($args->{"max_$a"})) {
+            push @filter_fields, $c;
+        }
+    }
+    for my $c (grep {$col_specs->{$_}{type} =~ /^str$/} @columns) {
+        my $a = $col2arg->{$c};
+        if (defined($args->{$a}) || defined($args->{"${a}_match"}) ||
+                defined($args->{"${a}_not_match"})) {
+            push @filter_fields, $c unless $c ~~ @filter_fields;
+        }
+    }
+    $hints->{filter_fields} = \@filter_fields;
+
+    my @sort_fields;
+    if ($args->{sort}) {
+
+    }
+    $hints->{sort_fields} = \@sort_fields;
+
+    my @mentioned_fields =
+        keys %{{ map {$_=>1} @requested_fields,
+                     @filter_fields, @sort_fields }};
+    $hints->{mentioned_fields} = \@mentioned_fields;
+
+    $hints;
+}
+
+sub __gen_func {
+    my ($table_data, $func_spec, $table_spec, $col_specs, $col2arg) = @_;
+
+    my $func = sub {
+        my %args = @_;
+
+        # XXX schema
+
+        # construct hints
+        my $hints = __gen_hints(\%args, $table_spec, $col_specs, $col2arg);
+
+        if (_is_aoa($table_data)) {
+        } elsif (_is_aoh($table_data)) {
+        } elsif (ref($table_data) eq 'CODE') {
+        }
+
+        # retrieve data
+
+        # perform filtering
+        # XXX count?
+        # perform ordering
+        # perform paging
+
+        # return data
+    };
+
+    $func;
+}
+
 $SPEC{gen_read_table_func} = {
     summary => 'Generate function (and its spec) to read table data',
     description => <<'_',
@@ -158,225 +416,26 @@ _
     },
 };
 sub gen_read_table_func {
-    my %margs = @_;
+    my %args = @_;
 
     # XXX schema
-    my $table_data = $margs{table_data}
+    my $table_data = $args{table_data}
         or return [400, "Please specify table_data"];
     _is_aoa($table_data) or _is_aoh($table_data) or ref($table_data) eq 'CODE'
         or return [400, "Invalid table_data: must be AoA or AoH or function"];
-    my $table_spec = $margs{table_spec}
+    my $table_spec = $args{table_spec}
         or return [400, "Please specify table_spec"];
     ref($table_spec) eq 'HASH'
         or return [400, "Invalid table_spec: must be a hash"];
 
-    my $func_spec = {
-        summary => "",
-        description => "",
-        args => {
-            show_field_names => ['bool' => {
-                arg_category => 'field selection',
-                summary => 'Show field names in result (as hash/assoc)',
-                description => <<'_',
+    my $res;
 
-When off, will return an array of values without field names (array/list).
+    $res = _gen_spec($table_spec);
+    return [400, "Can't generate spec: $res->[1]"] unless $res->[0] == 200;
+    my ($func_spec, $col_specs, $col2arg) = @{$res->[2]};
 
-Default is off, will be turned on by default when 'fields' or 'detail' options
-are specified.
-
-_
-            }],
-            detail => ['bool' => {
-                arg_category => 'field selection',
-                summary => 'Return detailed data (all fields)',
-                default => 0,
-            }],
-            fields => ['array' => {
-                of => 'str*',
-                arg_category => 'field selection',
-                summary => 'Select fields to return',
-                description => <<'_',
-
-When off, will return an array of values without field names (array/list).
-
-Default is off, will be turned on by default when 'fields' or 'detail' options
-are specified.
-
-_
-            }],
-            sort => ['str' => {
-                arg_category => 'order',
-                summary => 'Order data according to certain fields',
-                description => <<'_',
-
-A list of field names separated by comma. Each field can be prefixed with '-' to
-specify descending order instead of the default ascending.
-
-_
-            }],
-            random => ['bool' => {
-                arg_category => 'order',
-                summary => 'If on, return result in random order',
-                default => 0,
-            }],
-            result_limit => ['int' => {
-                arg_category => 'paging',
-                summary => 'Only return a certain number of results',
-            }],
-            result_start => ['int' => {
-                arg_category => 'paging',
-                summary => 'Only return results from a certain position',
-                default => 1,
-            }],
-            q => ['str' => {
-                arg_category => 'filter',
-                summary => 'Filter using string matching',
-            }],
-        },
-    };
-
-    my %c2a; # foo -> foo, q -> q_field (clashes with arg name)
-    for my $cname (keys %{$table_spec->{columns}}) {
-        my $cspec = _parse_schema($table_spec->{columns}{$cname});
-        my $cf = $cspec->{attr_hashes}[0]{column_filterable};
-        next if defined($cf) && !$cf;
-        my $a = $cname;
-        if (exists $func_spec->{args}{$a}) {
-            $a = "${a}_field";
-            if (exists $func_spec->{args}{$a}) {
-                return [400, "Clash of column name with arg name: $a"];
-            }
-        }
-        $c2a{$cname} = $a;
-        my $t = $cspec->{type};
-        if ($t eq 'bool') {
-            return [400, "Clash of $t filter argument: $a"]
-                if $func_spec->{args}{$a};
-            $func_spec->{args}{$a} = ['bool' => {
-                summary => "Only return results having a true $a value",
-                arg_category => 'filter',
-                default => 0,
-            }];
-        }
-        if ($t eq 'set') {
-            return [400, "Clash of $t filter argument: has_$a"]
-                if $func_spec->{args}{"has_$a"};
-            $func_spec->{args}{"has_$a"} = ['array' => {
-                of => 'str*',
-                arg_category => 'filter',
-                summary => "Only return results having ".
-                    "specified values in $a",
-            }];
-            return [400, "Clash of $t filter argument: lacks_$a"]
-                if $func_spec->{args}{"lacks_$a"};
-            $func_spec->{args}{"lacks_$a"} = ['array' => {
-                of => 'str*',
-                arg_category => 'filter',
-                summary => "Only return results not having ".
-                    "specified values in $a",
-            }];
-        }
-        if ($t =~ /(?:int|float|str)/) {
-            return [400, "Clash of $t filter argument: min_$a"]
-                if $func_spec->{args}{"min_$a"};
-            $func_spec->{args}{"min_$a"} = [$t => {
-                summary => "Only return results having ".
-                    "a certain minimum value of $a",
-                arg_category => 'filter',
-            }];
-            return [400, "Clash of $t filter argument: max_$a"]
-                if $func_spec->{args}{"max_$a"};
-            $func_spec->{args}{"max_$a"} = [$t => {
-                summary => "Only return results having ".
-                    "a certain maximum value of $a",
-                arg_category => 'filter',
-            }];
-        }
-        if ($t eq 'str') {
-            return [400, "Clash of $t filter argument: $a"]
-                if $func_spec->{args}{$a};
-            $func_spec->{args}{$a} = [$t => {
-                summary => "Only return results having certain value of $a",
-                arg_category => 'filter',
-            }];
-            return [400, "Clash of $t filter argument: ${a}_match"]
-                if $func_spec->{args}{"${a}_match"};
-            $func_spec->{args}{"${a}_match"} = [$t => {
-                summary => "Only return results with $a matching ".
-                    "specified regex",
-                arg_category => 'filter',
-            }];
-            return [400, "Clash of $t filter argument: ${a}_not_match"]
-                if $func_spec->{args}{"${a}_not_match"};
-            $func_spec->{args}{"${a}_not_match"} = [$t => {
-                summary => "Only return results with $a matching ".
-                    "specified regex",
-                arg_category => 'filter',
-            }];
-        }
-    }
-    #my %a2c = reverse %c2a;
-
-    # normalize args
-    while (my ($k, $v) = each %{$func_spec->{args}}) {
-        $func_spec->{args}{$k} = _parse_schema($v);
-    }
-
-    my $func = sub {
-        my %fargs = @_;
-        my $hints = {};
-
-        # XXX schema
-
-        my @columns = keys %{$table_spec->{columns}};
-        my @requested_fields;
-        my $show_field_names = $fargs{show_field_names};
-        if ($fargs{detail}) {
-            @requested_fields = [@columns];
-            $show_field_names //= 1;
-        } elsif ($fargs{fields}) {
-            @requested_fields = [@{ $fargs{fields} }];
-            $show_field_names //= 1;
-        } else {
-            @requested_fields = ($table_spec->{pk});
-            $show_field_names //= 0;
-        }
-        for (@requested_fields) {
-            return [400, "Unknown field $_"] unless $_ ~~ @columns;
-        }
-        $hints->{requested_fields} = \@requested_fields;
-
-        my @filter_fields;
-        for my $a (grep {$table_spec->{columns}{$_}{type} eq 'bool'}) {
-            if (defined $fargs{$a}) {
-            }
-        }
-        $hints->{filter_fields} = \@sort_fields;
-
-        my @sort_fields;
-        if ($fargs{sort}) {
-        }
-        $hints->{sort_fields} = \@sort_fields;
-
-        @mentioned_fields =
-            keys %{{ map {$_=>1} @requested_fields,
-                         @filter_fields, @sort_fields }};
-        $hints->{mentioned_fields} = \@mentioned_fields;
-
-        if (_is_aoa($data)) {
-        } elsif (_is_aoh($data)) {
-        } elsif (ref($data) eq 'CODE') {
-        }
-
-        # retrieve data
-
-        # perform filtering
-        # XXX count?
-        # perform ordering
-        # perform paging
-
-        # return data
-    };
+    my $func = __gen_func(
+        $table_data, $func_spec, $table_spec, $col_specs, $col2arg);
 
     [200, "OK", {spec=>$func_spec, code=>$func}];
 }
