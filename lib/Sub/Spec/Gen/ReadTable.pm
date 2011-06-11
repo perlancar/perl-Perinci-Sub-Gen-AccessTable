@@ -454,7 +454,7 @@ sub _gen_func {
         for my $row (@rows) {
             if (!$args{detail} || !$args{fields} && keys(%$row)==1) {
                 $row = $row->{$pk};
-                next ROW;
+                next ROW2;
             }
             for (@columns) {
                 delete $row->{$_} unless $_ ~~ @{$query->{requested_fields}};
