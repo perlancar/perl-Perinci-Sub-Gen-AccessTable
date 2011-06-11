@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use Log::Any '$log';
 
+use List::Util qw(shuffle);
 use Sub::Spec::Utils; # temp, for _parse_schema
 
 use Exporter;
@@ -312,7 +313,8 @@ sub _parse_query {
             push @sort_fields, $f;
         }
     }
-    $query->{sorts}       = @sorts;
+    $query->{random}      = $args->{random};
+    $query->{sorts}       = \@sorts;
     $query->{sort_fields} = \@sort_fields;
 
     my @mentioned_fields =
@@ -370,6 +372,7 @@ sub _gen_func {
         no warnings; # silence undef warnings when comparing row values
 
         # perform filtering
+        $log->tracef("(read_table_func) Filtering ...");
       ROW:
         for my $row (@$data) {
             if (ref($row) eq 'ARRAY') {
@@ -416,7 +419,10 @@ sub _gen_func {
         }
 
         # perform ordering
-        if (@{$query->{sorts}}) {
+        $log->tracef("(read_table_func) Ordering ...");
+        if ($query->{random}) {
+            @rows = shuffle @rows;
+        } elsif (@{$query->{sorts}}) {
             @rows = sort {
                 for my $s (@{$query->{sorts}}) {
                     my ($f, $op, $desc) = @$s;
@@ -433,6 +439,7 @@ sub _gen_func {
         use warnings;
 
         # perform paging
+        $log->tracef("(read_table_func) Paging ...");
         if ($query->{result_start} > 1) {
             splice @rows, 0, $query->{result_start}-1;
         }
@@ -441,6 +448,7 @@ sub _gen_func {
         }
 
         # select fields
+        $log->tracef("(read_table_func) Selecting fields ...");
         my $pk = $table_spec->{pk};
       ROW2:
         for my $row (@rows) {
