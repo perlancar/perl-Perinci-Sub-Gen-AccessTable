@@ -180,7 +180,7 @@ _
                     "certain text",
                 arg_category => 'filter',
             }];
-            my $cf = $col_specs->{column_filterable_regex};
+            my $cf = $cspec->{attr_hashes}[0]{column_filterable_regex};
             unless (defined($cf) && !$cf) {
                 return [400, "Clash of $t filter argument: ${a}_match"]
                     if $func_spec->{args}{"${a}_match"};

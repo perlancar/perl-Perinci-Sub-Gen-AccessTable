@@ -13,11 +13,13 @@ test_gen(
     table_data => [],
     table_spec => {
         columns => {
-            s => ['str*' => {}],
-            i => ['int*' => {}],
-            f => ['float*' => {}],
-            a => ['array*' => {}],
-            b => ['bool*' => {}],
+            s  => ['str*' => {}],
+            s2 => ['str*' => {column_filterable=>0}],
+            s3 => ['str*' => {column_filterable_regex=>0}],
+            i  => ['int*' => {}],
+            f  => ['float*' => {}],
+            a  => ['array*' => {}],
+            b  => ['bool*' => {}],
         },
         pk => 'id',
     },
@@ -39,11 +41,27 @@ test_gen(
         ok($args->{s_not_contain}, "string filter arg 's_not_contain' gen'd");
         ok($args->{s_match}, "string filter arg 's_match' generated");
         ok($args->{s_not_match}, "string filter arg 's_not_match' generated");
+
+        ok(!$args->{s2}, "string filter arg 's2' not generated");
+        ok(!$args->{s2_contain},
+           "string filter arg 's2_contain' not generated");
+        ok(!$args->{s2_not_contain},
+           "string filter arg 's2_not_contain' not generated");
+        ok(!$args->{s2_match}, "string filter arg 's2_match' not generated");
+        ok(!$args->{s2_not_match},
+           "string filter arg 's2_not_match' not generated");
+
+        ok($args->{s3}, "string filter arg 's3' generated");
+        ok($args->{s3_contain}, "string filter arg 's3_contain' generated");
+        ok($args->{s3_not_contain},
+           "string filter arg 's3_not_contain' generated");
+        ok(!$args->{s3_match}, "string filter arg 's3_match' not generated");
+        ok(!$args->{s3_not_match},
+           "string filter arg 's3_not_match' not generated");
     },
 );
 
 # XXX test clash with args
-# XXX test column_filterable, column_filterable_regex
 
 DONE_TESTING:
 done_testing();
