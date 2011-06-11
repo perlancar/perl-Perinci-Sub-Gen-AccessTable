@@ -180,20 +180,23 @@ _
                     "certain text",
                 arg_category => 'filter',
             }];
-            return [400, "Clash of $t filter argument: ${a}_match"]
-                if $func_spec->{args}{"${a}_match"};
-            $func_spec->{args}{"${a}_match"} = [$t => {
-                summary => "Only return results with $a matching ".
-                    "specified regex",
-                arg_category => 'filter',
-            }];
-            return [400, "Clash of $t filter argument: ${a}_not_match"]
-                if $func_spec->{args}{"${a}_not_match"};
-            $func_spec->{args}{"${a}_not_match"} = [$t => {
-                summary => "Only return results with $a matching ".
-                    "specified regex",
-                arg_category => 'filter',
-            }];
+            my $cf = $col_specs->{column_filterable_regex};
+            unless (defined($cf) && !$cf) {
+                return [400, "Clash of $t filter argument: ${a}_match"]
+                    if $func_spec->{args}{"${a}_match"};
+                $func_spec->{args}{"${a}_match"} = [$t => {
+                    summary => "Only return results with $a matching ".
+                        "specified regex",
+                    arg_category => 'filter',
+                }];
+                return [400, "Clash of $t filter argument: ${a}_not_match"]
+                    if $func_spec->{args}{"${a}_not_match"};
+                $func_spec->{args}{"${a}_not_match"} = [$t => {
+                    summary => "Only return results with $a matching ".
+                        "specified regex",
+                    arg_category => 'filter',
+                }];
+            }
         }
     }
 
@@ -422,6 +425,9 @@ it will be suffixed with '_field' (e.g. *q_field* or *sort_field*).
 *** "FIELD_contain" string argument for each str field
 
 *** "FIELD_match" and "FIELD_not_match" regex argument for each str field
+
+Will not be generated if column_filterable_regex clause in column specification
+is set to 0.
 
 *** "FIELD_starts_with" string argument for each str field (not implemented)
 
