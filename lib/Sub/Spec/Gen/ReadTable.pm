@@ -166,6 +166,20 @@ _
                 summary => "Only return results having certain value of $a",
                 arg_category => 'filter',
             }];
+            return [400, "Clash of $t filter argument: ${a}_contain"]
+                if $func_spec->{args}{"${a}_contain"};
+            $func_spec->{args}{"${a}_contain"} = [$t => {
+                summary => "Only return results with $a containing ".
+                    "certain text",
+                arg_category => 'filter',
+            }];
+            return [400, "Clash of $t filter argument: ${a}_not_contain"]
+                if $func_spec->{args}{"${a}_not_contain"};
+            $func_spec->{args}{"${a}_not_contain"} = [$t => {
+                summary => "Only return results with $a not containing ".
+                    "certain text",
+                arg_category => 'filter',
+            }];
             return [400, "Clash of $t filter argument: ${a}_match"]
                 if $func_spec->{args}{"${a}_match"};
             $func_spec->{args}{"${a}_match"} = [$t => {
@@ -236,8 +250,10 @@ sub __gen_hints {
     }
     for my $c (grep {$col_specs->{$_}{type} =~ /^str$/} @columns) {
         my $a = $col2arg->{$c};
-        if (defined($args->{$a}) || defined($args->{"${a}_match"}) ||
-                defined($args->{"${a}_not_match"})) {
+        if (defined($args->{$a}) || defined($args->{"${a}_contain"}) ||
+                defined($args->{"${a}_not_contain"}) ||
+                    defined($args->{"${a}_match"}) ||
+                        defined($args->{"${a}_not_match"})) {
             push @filter_fields, $c unless $c ~~ @filter_fields;
         }
     }
@@ -403,7 +419,7 @@ it will be suffixed with '_field' (e.g. *q_field* or *sort_field*).
 
 *** "FIELD" string argument for each str field
 
-*** "FIELD_contains" string argument for each str field (not implemented)
+*** "FIELD_contain" string argument for each str field
 
 *** "FIELD_match" and "FIELD_not_match" regex argument for each str field
 
