@@ -209,9 +209,9 @@ _
     ($func_spec, $col_specs, $col2arg);
 }
 
-sub __gen_hints {
+sub __parse_query {
     my ($args, $table_spec, $col_specs, $col2arg) = @_;
-    my $hints = {};
+    my $query = {args=>$args};
 
     my @columns = keys %$col_specs;
     my @requested_fields;
@@ -229,51 +229,87 @@ sub __gen_hints {
     for (@requested_fields) {
         return [400, "Unknown field $_"] unless $_ ~~ @columns;
     }
-    $hints->{requested_fields} = \@requested_fields;
+    $query->{requested_fields} = \@requested_fields;
 
     my @filter_fields;
+    my @filters;
     for my $c (grep {$col_specs->{$_}{type} eq 'bool'} @columns) {
         my $a = $col2arg->{$c};
+        my $exists;
         if (defined $args->{$a}) {
-            push @filter_fields, $c;
+            $exists++;
+            push @filters, [$a, $c, "truth", $args->{$a}];
         }
+        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
     for my $c (grep {$col_specs->{$_}{type} eq 'set'} @columns) {
         my $a = $col2arg->{$c};
-        if (defined($args->{"has_$a"}) || defined($args->{"lacks_$a"})) {
-            push @filter_fields, $c;
+        my $exists;
+        if (defined $args->{"has_$a"}) {
+            $exists++;
+            push @filters, ["has_$a", $c, "~~", $args->{"has_$a"}];
         }
+        if (defined $args->{"lacks_$a"}) {
+            $exists++;
+            push @filters, ["lacks_$a", $c, "!~~", $args->{"lacks_$a"}];
+        }
+        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
     for my $c (grep {$col_specs->{$_}{type} =~ /^(int|float|str)$/}
                    @columns) {
+        my $t = $col_specs->{$c}{type};
+        my $exists;
         my $a = $col2arg->{$c};
-        if (defined($args->{"min_$a"}) || defined($args->{"max_$a"})) {
-            push @filter_fields, $c;
+        if (defined $args->{"min_$a"}) {
+            $exists++;
+            push @filters, ["min_$a", $c, $t eq 'str' ? 'ge' : '>=',
+                            $args->{"min_$a"}];
         }
+        if (defined $args->{"max_$a"}) {
+            $exists++;
+            push @filters, ["max_$a", $c, $t eq 'str' ? 'le' : '<=',
+                            $args->{"max_$a"}];
+        }
+        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
     for my $c (grep {$col_specs->{$_}{type} =~ /^str$/} @columns) {
         my $a = $col2arg->{$c};
-        if (defined($args->{$a}) || defined($args->{"${a}_contain"}) ||
-                defined($args->{"${a}_not_contain"}) ||
-                    defined($args->{"${a}_match"}) ||
-                        defined($args->{"${a}_not_match"})) {
-            push @filter_fields, $c unless $c ~~ @filter_fields;
+        my $exists;
+        if (defined $args->{"${a}_contain"}) {
+            $exists++;
+            push @filters, ["${a}_contain", $c, 'pos', $args->{"${a}_contain"}];
         }
+        if (defined $args->{"${a}_not_contain"}) {
+            $exists++;
+            push @filters, ["${a}_not_contain", $c, '!pos',
+                            $args->{"${a}_not_contain"}];
+        }
+        if (defined $args->{"${a}_match"}) {
+            $exists++;
+            push @filters, ["${a}_match", $c, '=~', $args->{"${a}_match"}];
+        }
+        if (defined $args->{"${a}_not_match"}) {
+            $exists++;
+            push @filters, ["${a}_not_match", $c, '!~',
+                            $args->{"${a}_not_match"}];
+        }
+        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
-    $hints->{filter_fields} = \@filter_fields;
+    $query->{filters}       = \@filters;
+    $query->{filter_fields} = \@filter_fields;
 
     my @sort_fields;
     if ($args->{sort}) {
 
     }
-    $hints->{sort_fields} = \@sort_fields;
+    $query->{sort_fields} = \@sort_fields;
 
     my @mentioned_fields =
         keys %{{ map {$_=>1} @requested_fields,
                      @filter_fields, @sort_fields }};
-    $hints->{mentioned_fields} = \@mentioned_fields;
+    $query->{mentioned_fields} = \@mentioned_fields;
 
-    $hints;
+    $query;
 }
 
 sub __gen_func {
@@ -285,7 +321,7 @@ sub __gen_func {
         # XXX schema
 
         # construct hints
-        my $hints = __gen_hints(\%args, $table_spec, $col_specs, $col2arg);
+        my $query = __parse_query(\%args, $table_spec, $col_specs, $col2arg);
 
         if (_is_aoa($table_data)) {
         } elsif (_is_aoh($table_data)) {
@@ -327,14 +363,14 @@ Table data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
 below).
 
 Passing a subroutine lets you fetch data dynamically. The subroutine will be
-called with these arguments ($query, $hints) and is expected to return an AoA or
-AoH. $query is a hashref and is the arguments passed to the generated function
-(e.g. {random=>1, result_limit=>1, field1_match=>'foo'}). $hints is a hashref
-and provides some, well, hints about the query, e.g. 'mentioned_fields' which
-lists fields that are mentioned in either filtering arguments or fields or
-ordering, 'requested_fields' (fields mentioned in list of fields to be
-returned), 'sort_fields' (fields mentioned in sort arguments), 'filter_fields'
-(fields mentioned in filter arguments).
+called with these arguments ($query) and is expected to return an AoA or AoH.
+$query is a hashref which contains information about the query, e.g. 'args' (the
+original arguments passed to the generated function, e.g. {random=>1,
+result_limit=>1, field1_match=>'foo'}), 'mentioned_fields' which lists fields
+that are mentioned in either filtering arguments or fields or ordering,
+'requested_fields' (fields mentioned in list of fields to be returned),
+'sort_fields' (fields mentioned in sort arguments), 'filter_fields' (fields
+mentioned in filter arguments), etc.
 
 The subroutine can do filtering/ordering/paging beforehand for efficiency, e.g.
 SELECT-ing from a DBI table using the appropriate columns, ORDER, WHERE, and
