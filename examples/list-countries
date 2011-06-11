@@ -9,10 +9,10 @@ use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
 our %SPEC;
 
 my $countries = [
-    ['cn', 'China', 'Cina', [qw/panda/]],
-    ['id', 'Indonesia', 'Indonesia', [qw/bali tropical/]],
-    ['sg', 'Singapore', 'Singapura', [qw/tropical/]],
-    ['us', 'United States of America', 'Amerika Serikat', [qw//]],
+    ['cn', 'China', 'Cina', [qw/panda/], 1400],
+    ['id', 'Indonesia', 'Indonesia', [qw/bali tropical/], 230],
+    ['sg', 'Singapore', 'Singapura', [qw/tropical/], 8],
+    ['us', 'United States of America', 'Amerika Serikat', [qw//], 400],
 ];
 
 my $res = gen_read_table_func(
@@ -39,6 +39,11 @@ my $res = gen_read_table_func(
                 summary => 'Keywords/tags',
                 column_index => 3,
                 column_sortable => 0,
+             }],
+            population => ['int*' => {
+                summary => 'Population, in millions',
+                column_index => 4,
+                column_sortable => 1,
              }],
         },
         pk => 'id',

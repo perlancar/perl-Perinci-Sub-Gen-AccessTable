@@ -147,6 +147,12 @@ _
             }];
         }
         if ($t =~ /(?:int|float|str)/) {
+            return [400, "Clash of $t filter argument: $a"]
+                if $func_spec->{args}{$a};
+            $func_spec->{args}{$a} = [$t => {
+                summary => "Only return results having certain value of $a",
+                arg_category => 'filter',
+            }];
             return [400, "Clash of $t filter argument: min_$a"]
                 if $func_spec->{args}{"min_$a"};
             $func_spec->{args}{"min_$a"} = [$t => {
@@ -163,12 +169,6 @@ _
             }];
         }
         if ($t eq 'str') {
-            return [400, "Clash of $t filter argument: $a"]
-                if $func_spec->{args}{$a};
-            $func_spec->{args}{$a} = [$t => {
-                summary => "Only return results having certain value of $a",
-                arg_category => 'filter',
-            }];
             return [400, "Clash of $t filter argument: ${a}_contain"]
                 if $func_spec->{args}{"${a}_contain"};
             $func_spec->{args}{"${a}_contain"} = [$t => {
@@ -261,6 +261,10 @@ sub _parse_query {
         my $t = $col_specs->{$c}{type};
         my $exists;
         my $a = $col2arg->{$c};
+        if (defined $args->{$a}) {
+            $exists++;
+            push @filters, [$a, $c, $t eq 'str' ? "eq" : "==", $args->{$a}];
+        }
         if (defined $args->{"min_$a"}) {
             $exists++;
             push @filters, ["min_$a", $c, $t eq 'str' ? 'ge' : '>=',
@@ -396,6 +400,10 @@ sub _gen_func {
                     for (@$opn) {
                         next ROW if $_ ~~ @{$row->{$c}};
                     }
+                } elsif ($op eq 'eq') {
+                    next ROW unless $row->{$c} eq $opn;
+                } elsif ($op eq '==') {
+                    next ROW unless $row->{$c} == $opn;
                 } elsif ($op eq 'ge') {
                     next ROW unless $row->{$c} ge $opn;
                 } elsif ($op eq '>=') {
@@ -590,9 +598,7 @@ it will be suffixed with '_field' (e.g. *q_field* or *sort_field*).
 
 *** "has_FIELD" and "lacks_FIELD" array arguments for each set field
 
-*** "min_FIELD"/"max_FIELD" int/float/str arguments for each int/float/str
-
-*** "FIELD" string argument for each str field
+*** "min_FIELD"/"max_FIELD"/"FIELD" arguments for each int/float/str
 
 *** "FIELD_contain" string argument for each str field
 

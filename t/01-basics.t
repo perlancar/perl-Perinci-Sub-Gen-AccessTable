@@ -30,12 +30,18 @@ test_gen(
         my $spec = $res->[2]{spec};
         my $args = $spec->{args};
         ok($args->{b}, "boolean filter arg 'b' generated");
+
+        ok($args->{i}, "int filter arg 'i' generated");
         ok($args->{max_i}, "int filter arg 'min_i' generated");
         ok($args->{min_i}, "int filter arg 'max_i' generated");
+
+        ok($args->{f}, "float filter arg 'f' generated");
         ok($args->{min_f}, "float filter arg 'min_f' generated");
         ok($args->{max_f}, "float filter arg 'max_f' generated");
+
         ok($args->{has_a}, "array filter arg 'has_a' generated");
         ok($args->{lacks_a}, "array filter arg 'lacks_a' generated");
+
         ok($args->{s}, "string filter arg 's' generated");
         ok($args->{s_contain}, "string filter arg 's_contain' generated");
         ok($args->{s_not_contain}, "string filter arg 's_not_contain' gen'd");
