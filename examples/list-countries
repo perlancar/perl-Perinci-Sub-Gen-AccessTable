@@ -20,7 +20,7 @@ my $res = gen_read_table_func(
     table_spec => {
         summary => 'List of countries',
         columns => {
-            id => ['int*' => {
+            id => ['str*' => {
                 summary => 'ISO 2-letter code for the country',
                 column_index => 0,
                 column_sortable => 1,
@@ -30,7 +30,7 @@ my $res = gen_read_table_func(
                 column_index => 1,
                 column_sortable => 1,
             }],
-            id_name => ['int*' => {
+            id_name => ['str*' => {
                 summary => 'Indonesian name',
                 column_index => 2,
                 column_sortable => 1,

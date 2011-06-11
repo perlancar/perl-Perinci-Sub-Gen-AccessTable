@@ -304,11 +304,12 @@ sub _parse_query {
     if (defined $args->{sort}) {
         my @f = split /\s*[,;]\s*/, $args->{sort};
         for my $f (@f) {
-            my $desc = s/^-//;
+            my $desc = $f =~ s/^-//;
             return [400, "Unknown field in sort: $f"]
                 unless $f ~~ @columns;
             my $t = $col_specs->{$f}{type};
             my $op = $t =~ /^(int|float)$/ ? '<=>' : 'cmp';
+            #print "t=$t, op=$op\n";
             push @sorts, [$f, $op, $desc ? -1:1];
             push @sort_fields, $f;
         }
@@ -372,7 +373,6 @@ sub _gen_func {
 
         no warnings; # silence undef warnings when comparing row values
 
-        # perform filtering
         $log->tracef("(read_table_func) Filtering ...");
       ROW:
         for my $row (@$data) {
@@ -419,7 +419,6 @@ sub _gen_func {
             push @rows, $row;
         }
 
-        # perform ordering
         $log->tracef("(read_table_func) Ordering ...");
         if ($query->{random}) {
             @rows = shuffle @rows;
@@ -427,11 +426,15 @@ sub _gen_func {
             @rows = sort {
                 for my $s (@{$query->{sorts}}) {
                     my ($f, $op, $desc) = @$s;
-                    my $x = $desc * (
-                        $op eq 'cmp' ?
-                            $a->{$f} cmp $b->{$f} :
-                                $a->{$f} <=> $b->{$f});
-                    return $x if $x != 0;
+                    my $x;
+                    if ($op eq 'cmp') {
+                        $x = $a->{$f} cmp $b->{$f};
+                    } else {
+                        $x = $a->{$f} <=> $b->{$f};
+                    }
+                    #print "$a->{$f} $op $b->{$f} = $x (desc=$desc)\n";
+                    return $x*$desc if $x != 0;
+
                 }
                 0;
             } @rows;
@@ -689,7 +692,7 @@ In list_countries.pl:
      table_spec => {
          summary => 'List of countries',
          columns => {
-             id => ['int*' => {
+             id => ['str*' => {
                  summary => 'ISO 2-letter code for the country',
                  column_index => 0,
                  column_sortable => 1,
@@ -699,7 +702,7 @@ In list_countries.pl:
                  column_index => 1,
                  column_sortable => 1,
              }],
-             id_name => ['int*' => {
+             id_name => ['str*' => {
                  summary => 'Indonesian name',
                  column_index => 2,
                  column_sortable => 1,
