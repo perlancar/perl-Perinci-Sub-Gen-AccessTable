@@ -124,7 +124,7 @@ _
                 if $func_spec->{args}{$a};
             $func_spec->{args}{$a} = ['bool' => {
                 summary => "Only return results having a true $a value",
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
                 default => 0,
             }];
         }
@@ -133,7 +133,7 @@ _
                 if $func_spec->{args}{"has_$a"};
             $func_spec->{args}{"has_$a"} = ['array' => {
                 of => 'str*',
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
                 summary => "Only return results having ".
                     "specified values in $a",
             }];
@@ -141,7 +141,7 @@ _
                 if $func_spec->{args}{"lacks_$a"};
             $func_spec->{args}{"lacks_$a"} = ['array' => {
                 of => 'str*',
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
                 summary => "Only return results not having ".
                     "specified values in $a",
             }];
@@ -151,21 +151,21 @@ _
                 if $func_spec->{args}{$a};
             $func_spec->{args}{$a} = [$t => {
                 summary => "Only return results having certain value of $a",
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
             }];
             return [400, "Clash of $t filter argument: min_$a"]
                 if $func_spec->{args}{"min_$a"};
             $func_spec->{args}{"min_$a"} = [$t => {
                 summary => "Only return results having ".
                     "a certain minimum value of $a",
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
             }];
             return [400, "Clash of $t filter argument: max_$a"]
                 if $func_spec->{args}{"max_$a"};
             $func_spec->{args}{"max_$a"} = [$t => {
                 summary => "Only return results having ".
                     "a certain maximum value of $a",
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
             }];
         }
         if ($t eq 'str') {
@@ -174,14 +174,14 @@ _
             $func_spec->{args}{"${a}_contain"} = [$t => {
                 summary => "Only return results with $a containing ".
                     "certain text",
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
             }];
             return [400, "Clash of $t filter argument: ${a}_not_contain"]
                 if $func_spec->{args}{"${a}_not_contain"};
             $func_spec->{args}{"${a}_not_contain"} = [$t => {
                 summary => "Only return results with $a not containing ".
                     "certain text",
-                arg_category => 'filter',
+                arg_category => "filter for $cname",
             }];
             my $cf = $cspec->{attr_hashes}[0]{column_filterable_regex};
             unless (defined($cf) && !$cf) {
@@ -190,14 +190,14 @@ _
                 $func_spec->{args}{"${a}_match"} = [$t => {
                     summary => "Only return results with $a matching ".
                         "specified regex",
-                    arg_category => 'filter',
+                    arg_category => "filter for $cname",
                 }];
                 return [400, "Clash of $t filter argument: ${a}_not_match"]
                     if $func_spec->{args}{"${a}_not_match"};
                 $func_spec->{args}{"${a}_not_match"} = [$t => {
                     summary => "Only return results with $a matching ".
                         "specified regex",
-                    arg_category => 'filter',
+                    arg_category => "filter for $cname",
                 }];
             }
         }
