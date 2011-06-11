@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+
+use 5.010;
+use strict;
+use warnings;
+use Sub::Spec::CmdLine        qw(run);
+use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
+
+our %SPEC;
+
+my $countries = [
+    ['cn', 'China', 'Cina', [qw/panda/]],
+    ['id', 'Indonesia', 'Indonesia', [qw/bali tropical/]],
+    ['sg', 'Singapore', 'Singapura', [qw/tropical/]],
+    ['us', 'United States of America', 'Amerika Serikat', [qw//]],
+];
+
+my $res = gen_read_table_func(
+    table_data => $countries,
+    table_spec => {
+        summary => 'List of countries',
+        columns => {
+            id => ['int*' => {
+                summary => 'ISO 2-letter code for the country',
+                column_index => 0,
+                column_sortable => 1,
+            }],
+            en_name => ['str*' => {
+                summary => 'English name',
+                column_index => 1,
+                column_sortable => 1,
+            }],
+            id_name => ['int*' => {
+                summary => 'Indonesian name',
+                column_index => 2,
+                column_sortable => 1,
+            }],
+            tags => ['array*' => {
+                summary => 'Keywords/tags',
+                column_index => 3,
+                column_sortable => 0,
+             }],
+        },
+        pk => 'id',
+    },
+);
+die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
+*list_countries       = $res->[2]{code};
+$SPEC{list_countries} = $res->[2]{spec};
+
+run(load=>0, module=>'main', sub=>'list_countries');
