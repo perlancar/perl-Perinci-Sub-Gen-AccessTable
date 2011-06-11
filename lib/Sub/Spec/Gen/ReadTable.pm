@@ -29,7 +29,7 @@ sub _is_aoh {
 }
 
 sub _gen_spec {
-    my ($table_spec) = @_;
+    my ($table_spec, $opts) = @_;
 
     # add general arguments
 
@@ -42,17 +42,16 @@ sub _gen_spec {
                 summary => 'Show field names in result (as hash/assoc)',
                 description => <<'_',
 
-When off, will return an array of values without field names (array/list).
-
-Default is off, will be turned on by default when 'fields' or 'detail' options
-are specified.
+When off, will return an array of values without field names (array/list). When
+on, will return an array of field names and values (hash/associative array).
 
 _
+                default => $opts->{default_show_field_names},
             }],
             detail => ['bool' => {
                 arg_category => 'field selection',
                 summary => 'Return detailed data (all fields)',
-                default => 0,
+                default => $opts->{default_detail} // 0,
             }],
             fields => ['array' => {
                 of => 'str*',
@@ -66,6 +65,7 @@ Default is off, will be turned on by default when 'fields' or 'detail' options
 are specified.
 
 _
+                default => $opts->{default_fields},
             }],
             sort => ['str' => {
                 arg_category => 'order',
@@ -76,15 +76,17 @@ A list of field names separated by comma. Each field can be prefixed with '-' to
 specify descending order instead of the default ascending.
 
 _
+                default => $opts->{default_sort},
             }],
             random => ['bool' => {
                 arg_category => 'order',
                 summary => 'If on, return result in random order',
-                default => 0,
+                default => $opts->{default_random} // 0,
             }],
             result_limit => ['int' => {
                 arg_category => 'paging',
                 summary => 'Only return a certain number of results',
+                default => $opts->{default_result_limit},
             }],
             result_start => ['int' => {
                 arg_category => 'paging',
@@ -208,7 +210,7 @@ _
     [200, "OK", [$func_spec, $col_specs, $col2arg]];
 }
 
-sub __parse_query {
+sub _parse_query {
     my ($args, $table_spec, $col_specs, $col2arg) = @_;
     my $query = {args=>$args};
 
@@ -297,8 +299,20 @@ sub __parse_query {
     $query->{filter_fields} = \@filter_fields;
 
     my @sort_fields;
-    if ($args->{sort}) {
+    my @sorts;
+    if (defined $args->{sort}) {
+        my @f = split /\s*[,;]\s*/, $args->{sort};
+        for my $f (@f) {
+            my $desc = s/^-//;
+            return [400, "Unknown field in sort: $f"]
+                unless $f ~~ @columns;
+            my $t = $col_specs->{$f}{type};
+            my $op = $t =~ /^(int|float)$/ ? '<=>' : 'cmp';
+            push @sorts, [$f, $op, $desc ? -1:1];
+            push @sort_fields, $f;
+        }
     }
+    $query->{sorts}       = @sorts;
     $query->{sort_fields} = \@sort_fields;
 
     my @mentioned_fields =
@@ -306,18 +320,32 @@ sub __parse_query {
                      @filter_fields, @sort_fields }};
     $query->{mentioned_fields} = \@mentioned_fields;
 
-    $query;
+    $query->{result_limit} = $args->{result_limit};
+    $query->{result_start} = $args->{result_start} // 1;
+
+    [200, "OK", [$query]];
 }
 
-sub __gen_func {
-    my ($table_data, $func_spec, $table_spec, $col_specs, $col2arg) = @_;
+sub _gen_func {
+    my ($opts, $table_data, $func_spec, $table_spec, $col_specs, $col2arg) = @_;
 
     my $func = sub {
         my %args = @_;
 
+        $args{detail}           //= $opts->{default_detail};
+        $args{fields}           //= $opts->{default_fields};
+        $args{show_field_names} //= $opts->{default_show_field_names};
+        $args{sort}             //= $opts->{default_sort};
+        $args{random}           //= $opts->{default_random};
+        $args{result_limit}     //= $opts->{default_result_limit};
+
         # XXX schema
 
-        my $query = __parse_query(\%args, $table_spec, $col_specs, $col2arg);
+        my $res = _parse_query(\%args, $table_spec, $col_specs, $col2arg);
+        return $res unless $res->[0] == 200;
+        my ($query) = @{$res->[2]};
+
+        my @columns = keys %$col_specs;
 
         # retrieve data
         my $data;
@@ -386,14 +414,57 @@ sub __gen_func {
         }
 
         # perform ordering
+        {
+            no warnings; # silence undef warnings
+            if (@{$query->{sorts}}) {
+                @rows = sort {
+                    for my $s (@{$query->{sorts}}) {
+                        my ($f, $op, $desc) = @$s;
+                        my $x = $desc * (
+                            $op eq 'cmp' ?
+                                $a->{$f} cmp $b->{$f} :
+                                    $a->{$f} <=> $b->{$f});
+                        return $x if $x != 0;
+                    }
+                    0;
+                } @rows;
+            }
+        }
 
         # perform paging
+        if ($query->{result_start} > 1) {
+            splice @rows, 0, $query->{result_start}-1;
+        }
+        if (defined $query->{result_limit}) {
+            splice @rows, $query->{result_limit};
+        }
+
+        # select fields
+        my $pk = $table_spec->{pk};
+      ROW2:
+        for my $row (@rows) {
+            if (!$args{detail} || !$args{fields} && keys(%$row)==1) {
+                $row = $row->{$pk};
+                next ROW;
+            }
+            for (@columns) {
+                delete $row->{$_} unless $_ ~~ @{$query->{requested_fields}};
+            }
+            if (!$args{show_field_names}) {
+                my @row_a;
+                for (@columns) {
+                    my $i = $col_specs->{$_}{attr_hashes}[0]{column_index};
+                    $row_a[$i] = $row->{$_};
+                }
+                $row = \@row_a;
+            }
+        }
 
         # return data
         [200, "OK", \@rows];
     };
 
-    $func;
+    [200, "OK", [$func]];
 }
 
 $SPEC{gen_read_table_func} = {
@@ -526,6 +597,25 @@ is set to 0.
 
 _
         }],
+        default_detail => ['bool' => {
+            summary => "Supply default 'detail' value for function spec",
+        }],
+        default_fields => ['str' => {
+            summary => "Supply default 'fields' value for function spec",
+        }],
+        default_show_field_names => ['bool' => {
+            summary => "Supply default 'show_field_names' ".
+                "value for function spec",
+        }],
+        default_sort => ['str' => {
+            summary => "Supply default 'sort' value for function spec",
+        }],
+        default_random => ['bool' => {
+            summary => "Supply default 'random' value for function spec",
+        }],
+        default_result_limit => ['int' => {
+            summary => "Supply default 'result_limit' value for function spec",
+        }],
     },
 };
 sub gen_read_table_func {
@@ -541,14 +631,26 @@ sub gen_read_table_func {
     ref($table_spec) eq 'HASH'
         or return [400, "Invalid table_spec: must be a hash"];
 
-    my $res;
+    my $opts = {
+        default_detail           => $args{default_detail},
+        default_show_field_names => $args{default_show_field_names},
+        default_fields           => $args{default_fields},
+        default_sort             => $args{default_sort},
+        default_random           => $args{default_random},
+        default_result_limit     => $args{default_result_limit},
+    };
 
-    $res = _gen_spec($table_spec);
-    return [400, "Can't generate spec: $res->[1]"] unless $res->[0] == 200;
+    my $res;
+    $res = _gen_spec($table_spec, $opts);
+    return [$res->[0], "Can't generate spec: $res->[1]"]
+        unless $res->[0] == 200;
     my ($func_spec, $col_specs, $col2arg) = @{$res->[2]};
 
-    my $func = __gen_func(
-        $table_data, $func_spec, $table_spec, $col_specs, $col2arg);
+    $res = _gen_func(
+        $opts, $table_data, $func_spec, $table_spec, $col_specs, $col2arg);
+    return [$res->[0], "Can't generate func: $res->[1]"]
+        unless $res->[0] == 200;
+    my ($func) = @{$res->[2]};
 
     [200, "OK", {spec=>$func_spec, code=>$func}];
 }
