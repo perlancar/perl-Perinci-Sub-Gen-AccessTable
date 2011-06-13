@@ -11,6 +11,8 @@ use lib $Bin, "$Bin/t";
 use Test::More 0.96;
 require "testlib.pl";
 
+my ($table_data, $table_spec) = gen_test_data();
+
 test_gen(
     name => 'pk must be in columns',
     table_data => [],
@@ -93,18 +95,7 @@ test_gen(
 test_gen(
     name => 'spec generation tests',
     table_data => [],
-    table_spec => {
-        columns => {
-            s  => ['str*'   => {column_index=>0, }],
-            s2 => ['str*'   => {column_index=>1, column_filterable=>0}],
-            s3 => ['str*'   => {column_index=>2, column_filterable_regex=>0}],
-            i  => ['int*'   => {column_index=>3, }],
-            f  => ['float*' => {column_index=>4, }],
-            a  => ['array*' => {column_index=>5, }],
-            b  => ['bool*'  => {column_index=>6, }],
-        },
-        pk => 's',
-    },
+    table_spec => $table_spec,
     status => 200,
     post_test => sub {
         my ($res) = @_;
@@ -146,6 +137,30 @@ test_gen(
         ok(!$args->{s3_match}, "string filter arg 's3_match' not generated");
         ok(!$args->{s3_not_match},
            "string filter arg 's3_not_match' not generated");
+    },
+);
+
+test_gen(
+    name => 'default_sort',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_sort=>"s"},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
+
+        my $fres;
+        $fres = $func->(detail=>1);
+        subtest "default_sort s" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            my @r = map {$_->{s}} @{$fres->[2]};
+            is_deeply(\@r, [qw/a1 a2 a3 b1/], "sort result")
+                or diag explain \@r;
+        };
     },
 );
 
