@@ -864,12 +864,12 @@ Now you can do:
 =head1 DESCRIPTION
 
 This module is useful when you want to expose a table data (an array of
-hashrefs, an array of arrays, an actual SQL table) as an API function. This
-module will generate a function that accepts arguments for specifying fields,
-filtering, sorting, and paging; along with its L<Sub::Spec> spec. The resulting
-function can then be run via command-line using L<Sub::Spec::CmdLine> (as
-demonstrated in Synopsis), or served via REST using L<Sub::Spec::HTTP::Server>,
-or consumed normally by Perl programs.
+hashrefs, an array of arrays, or external data like a SQL table) as an API
+function. This module will generate a function that accepts arguments for
+specifying fields, filtering, sorting, and paging; along with its L<Sub::Spec>
+spec. The resulting function can then be run via command-line using
+L<Sub::Spec::CmdLine> (as demonstrated in Synopsis), or served via REST using
+L<Sub::Spec::HTTP::Server>, or consumed normally by Perl programs.
 
 This module uses L<Log::Any> for logging framework.
 
