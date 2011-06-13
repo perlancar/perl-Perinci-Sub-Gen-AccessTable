@@ -232,10 +232,6 @@ test_gen(
     },
 );
 
-# test default_fields
-
-# test default_detail
-
 # test default_filters
 
 # test default_show_field_names

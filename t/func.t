@@ -14,7 +14,7 @@ require "testlib.pl";
 my ($table_data, $table_spec) = gen_test_data();
 
 test_gen(
-    name => 'ordering',
+    name => 'ordering, detail',
     table_data => $table_data,
     table_spec => $table_spec,
     status => 200,
@@ -78,7 +78,7 @@ test_gen(
 );
 
 test_gen(
-    name => 'fields',
+    name => 'fields, show_field_names',
     table_data => $table_data,
     table_spec => $table_spec,
     status => 200,
@@ -135,11 +135,7 @@ test_gen(
     },
 );
 
-# test detail
-
 # test filtering
-
-# test show_field_names
 
 # test paging
 
