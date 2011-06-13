@@ -1,14 +1,15 @@
 #!perl
 
+# test spec generation and the generated spec
+
 use 5.010;
 use strict;
 use warnings;
-use Log::Any '$log';
+use FindBin '$Bin';
+use lib $Bin, "$Bin/t";
+
 use Test::More 0.96;
-
-use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
-
-# XXX test: pk must be in columns
+require "testlib.pl";
 
 test_gen(
     name => 'pk must be in columns',
@@ -41,16 +42,57 @@ test_gen(
     status => 400,
 );
 
-goto DONE_TESTING;
+test_gen(
+    name => 'fields in sort must exist in columns',
+    table_data => [],
+    table_spec => {
+        columns => {
+            a => ['int*' => {column_index=>0, }],
+        },
+    },
+    status => 400,
+);
+
+test_gen(
+    name => 'field clash with argument',
+    table_data => [],
+    table_spec => {
+        columns => {
+            random => ['int*'  => {column_index=>0, }],
+        },
+        pk => 'random',
+    },
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
+        ok( $args->{random}, "random arg generated");
+        ok(!$args->{min_random}, "min_random arg not generated");
+        ok(!$args->{max_random}, "max_random arg not generated");
+        ok( $args->{random_field}, "random_field arg generated");
+        ok( $args->{min_random_field}, "min_random_field arg generated");
+        ok( $args->{max_random_field}, "min_random_field arg generated");
+    },
+);
+
+test_gen(
+    name => 'field clash with argument (fail)',
+    table_data => [],
+    table_spec => {
+        columns => {
+            random => ['int*'  => {column_index=>0, }],
+            random_field => ['int*'  => {column_index=>0, }],
+        },
+        pk => 'random',
+    },
+    status => 400,
+);
 
 test_gen(
     name => 'spec generation tests',
-    table_data => [
-        {s=>'a1', s2=>'', s3=>'a' , i=>1 , f=>0.1, a=>[qw//]   , b=>0},
-        {s=>'b1', s2=>'', s3=>'aa', i=>2 , f=>0.2, a=>[qw/b/]  , b=>0},
-        {s=>'a2', s2=>'', s3=>'a' , i=>-3, f=>1.2, a=>[qw/a/]  , b=>1},
-        {s=>'a3', s2=>'', s3=>'aa', i=>4 , f=>1.1, a=>[qw/a b/], b=>1},
-    ],
+    table_data => [],
     table_spec => {
         columns => {
             s  => ['str*'   => {column_index=>0, }],
@@ -111,46 +153,3 @@ test_gen(
 
 DONE_TESTING:
 done_testing();
-
-sub test_gen {
-    my (%args) = @_;
-
-    subtest $args{name} => sub {
-        my $res;
-        eval {
-            $res = gen_read_table_func(
-                table_data => $args{table_data},
-                table_spec => $args{table_spec},
-            );
-        };
-        my $eval_err = $@;
-        diag "died during function: $eval_err" if $eval_err;
-
-        if ($args{dies}) {
-            ok($eval_err, "dies");
-        }
-
-        if ($args{status}) {
-            is($res->[0], $args{status}, "status = $args{status}") or
-                do { diag explain $res; last };
-        }
-
-        if ($res->[0] == 200) {
-            my $func = $res->[2]{code};
-            my $spec = $res->[2]{spec};
-            is(ref($func), 'CODE', 'func returned');
-            is(ref($spec), 'HASH', 'spec returned');
-            my $args = $spec->{args};
-            for my $a (qw/show_field_names detail fields
-                          sort random result_limit result_start
-                          q/) {
-                ok($args->{$a}, "common arg '$a' generated");
-            }
-        }
-
-        if ($args{post_test}) {
-            $args{post_test}->($res);
-        }
-    };
-}
-
