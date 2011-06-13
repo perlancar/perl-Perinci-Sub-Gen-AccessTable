@@ -149,7 +149,5 @@ test_gen(
     },
 );
 
-# XXX test clash with args
-
 DONE_TESTING:
 done_testing();
