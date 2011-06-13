@@ -14,7 +14,7 @@ require "testlib.pl";
 my ($table_data, $table_spec) = gen_test_data();
 
 test_gen(
-    name => 'ordering tests',
+    name => 'ordering',
     table_data => $table_data,
     table_spec => $table_spec,
     status => 200,
@@ -58,6 +58,22 @@ test_gen(
             is_deeply(\@r, [qw/b1 a1 a3 a2/], "sort result")
                 or diag explain \@r;
         };
+    },
+);
+
+test_gen(
+    name => 'random ordering',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
+
+        test_random_order($func, {random=>1}, 50, [qw/a1 a2 a3 b1/],
+                          "sort result");
     },
 );
 

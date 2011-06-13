@@ -93,7 +93,7 @@ test_gen(
 );
 
 test_gen(
-    name => 'spec generation tests',
+    name => 'spec generation',
     table_data => [],
     table_spec => $table_spec,
     status => 200,
@@ -161,6 +161,23 @@ test_gen(
             is_deeply(\@r, [qw/a1 a2 a3 b1/], "sort result")
                 or diag explain \@r;
         };
+    },
+);
+
+test_gen(
+    name => 'default_random',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_random=>1},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
+
+        test_random_order($func, {}, 50, [qw/a1 a2 a3 b1/],
+                          "sort result");
     },
 );
 

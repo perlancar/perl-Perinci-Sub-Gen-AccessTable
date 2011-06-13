@@ -76,4 +76,18 @@ sub gen_test_data {
     return ($table_data, $table_spec);
 }
 
+sub test_random_order {
+    my ($func, $args, $n, $elems, $test_name) = @_;
+
+    my @x;
+    for (1 .. $n) {
+        my $a = $func->(%$args)->[2];
+        push @x, $a->[0] unless $a->[0] ~~ @x;
+    }
+
+    is_deeply([sort {$a cmp $b} @x],
+              [sort {$a cmp $b} @$elems], "random order ($n runs)")
+        or diag explain \@x;
+}
+
 1;
