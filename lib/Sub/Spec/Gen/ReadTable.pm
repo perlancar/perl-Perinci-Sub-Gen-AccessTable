@@ -477,7 +477,7 @@ sub _gen_func {
         my $pk = $table_spec->{pk};
       ROW2:
         for my $row (@rows) {
-            if (!$args{detail} && !$args{fields} && keys(%$row)==1) {
+            if (!$args{detail} && !$args{fields}) {
                 $row = $row->{$pk};
                 next ROW2;
             }
