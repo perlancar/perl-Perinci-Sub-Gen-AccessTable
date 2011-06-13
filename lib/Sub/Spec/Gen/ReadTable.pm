@@ -700,12 +700,12 @@ _
             summary => "Supply default 'result_limit' value for function spec",
         }],
         enable_search => ['bool' => {
-            summary => "Add search argument (q)",
+            summary => "Generated function will support searching (argument q)",
             default => 1,
         }],
         word_search => ['bool' => {
-            summary => "If enable, instead of string matching, ".
-                "use word searching",
+            summary => "Generated function will perform word searching ".
+                "instead of string searching",
             description => <<'_',
 
 For example, if search term is 'pine' and column value is 'green pineapple',
@@ -715,11 +715,11 @@ _
             default => 0,
         }],
         case_insensitive_search => ['bool' => {
-            summary => 'Perform case-insensitive search',
+            summary => 'Generated function will perform case-insensitive search',
             default => 1,
         }],
         custom_search => ['code' => {
-            summary => 'Supply custom searching',
+            summary => 'Supply custom searching for generated function',
             description => <<'_',
 
 Code will be supplied ($row, $q, $opts) where $q is the search term (the
