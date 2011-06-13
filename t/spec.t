@@ -181,5 +181,15 @@ test_gen(
     },
 );
 
+# test default_detail
+
+# test default_fields
+
+# test default_filters
+
+# test default_show_field_names
+
+# test default_result_limit
+
 DONE_TESTING:
 done_testing();

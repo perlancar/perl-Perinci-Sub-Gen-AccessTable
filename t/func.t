@@ -77,5 +77,71 @@ test_gen(
     },
 );
 
+test_gen(
+    name => 'fields',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
+
+        my $fres;
+
+        $fres = $func->(fields=>["x"]);
+        is($fres->[0], 400, "mention unknown field in fields -> fail");
+
+        $fres = $func->(fields=>"s");
+        subtest "single field" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            is_deeply($fres->[2],
+                      [{s=>'a1'},
+                       {s=>'b1'},
+                       {s=>'a3'},
+                       {s=>'a2'}],
+                      "result")
+                or diag explain $fres->[2];
+        };
+
+        $fres = $func->(fields=>"s, b");
+        subtest "multiple fields" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            is_deeply($fres->[2],
+                      [{s=>'a1', b=>0},
+                       {s=>'b1', b=>0},
+                       {s=>'a3', b=>1},
+                       {s=>'a2', b=>1}],
+                      "result")
+                or diag explain $fres->[2];
+        };
+
+        $fres = $func->(fields=>"b, s, b", show_field_names=>0);
+        subtest "multiple duplicate fields" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            is_deeply($fres->[2],
+                      [[0, 'a1', 0],
+                       [0, 'b1', 0],
+                       [1, 'a3', 1],
+                       [1, 'a2', 1]],
+                      "result")
+                or diag explain $fres->[2];
+        };
+
+    },
+);
+
+# test detail
+
+# test filtering
+
+# test show_field_names
+
+# test paging
+
 DONE_TESTING:
 done_testing();

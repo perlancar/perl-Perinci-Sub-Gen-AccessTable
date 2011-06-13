@@ -361,6 +361,10 @@ sub _gen_func {
         $args{result_limit}     //= $opts->{default_result_limit};
 
         # XXX schema
+        if (defined $args{fields}) {
+            $args{fields} = [split /\s*[,;]\s*/, $args{fields}]
+                unless ref($args{fields}) eq 'ARRAY';
+        }
 
         my $res = _parse_query(\%args, $table_spec, $col_specs, $col2arg);
         return $res unless $res->[0] == 200;
@@ -383,61 +387,65 @@ sub _gen_func {
             die "BUG: Data is not an array";
         }
 
-        # this will be the final result. currently, internally we always use
-        # hashref for rows and convert to array/scalar later when returning
-        # final data.
+        # this will be the final result.
         my @rows;
 
         no warnings; # silence undef warnings when comparing row values
 
         $log->tracef("(read_table_func) Filtering ...");
       ROW:
-        for my $row (@$data) {
-            if (ref($row) eq 'ARRAY') {
-                my $row_h = {};
+        for my $row0 (@$data) {
+            my $row_h;
+            if (ref($row0) eq 'ARRAY') {
+                # currently, internally we always use hashref for rows and
+                # convert to array/scalar later when returning final data.
+                $row_h = {};
                 for my $c (keys %$col_specs) {
-                    $row_h->{$c} = $row->[
+                    $row_h->{$c} = $row0->[
                         $col_specs->{$c}{attr_hashes}[0]{column_index}];
                 }
-                $row = $row_h;
+            } elsif (ref($row0) eq 'HASH') {
+                $row_h = { %$row0 };
+            } else {
+                return [500, "BUG: Invalid row, not a hash/array"];
             }
             for my $f (@{$query->{filters}}) {
                 my ($a, $c, $op, $opn) = @$f;
                 if ($op eq 'truth') {
-                    next ROW if $row->{$c} xor $opn;
+                    next ROW if $row_h->{$c} xor $opn;
                 } elsif ($op eq '~~') {
                     for (@$opn) {
-                        next ROW unless $_ ~~ @{$row->{$c}};
+                        next ROW unless $_ ~~ @{$row_h->{$c}};
                     }
                 } elsif ($op eq '!~~') {
                     for (@$opn) {
-                        next ROW if $_ ~~ @{$row->{$c}};
+                        next ROW if $_ ~~ @{$row_h->{$c}};
                     }
                 } elsif ($op eq 'eq') {
-                    next ROW unless $row->{$c} eq $opn;
+                    next ROW unless $row_h->{$c} eq $opn;
                 } elsif ($op eq '==') {
-                    next ROW unless $row->{$c} == $opn;
+                    next ROW unless $row_h->{$c} == $opn;
                 } elsif ($op eq 'ge') {
-                    next ROW unless $row->{$c} ge $opn;
+                    next ROW unless $row_h->{$c} ge $opn;
                 } elsif ($op eq '>=') {
-                    next ROW unless $row->{$c} >= $opn;
+                    next ROW unless $row_h->{$c} >= $opn;
                 } elsif ($op eq 'le') {
-                    next ROW unless $row->{$c} le $opn;
+                    next ROW unless $row_h->{$c} le $opn;
                 } elsif ($op eq '<=') {
-                    next ROW unless $row->{$c} <= $opn;
+                    next ROW unless $row_h->{$c} <= $opn;
                 } elsif ($op eq '=~') {
-                    next ROW unless $row->{$c} =~ $opn;
+                    next ROW unless $row_h->{$c} =~ $opn;
                 } elsif ($op eq '!~') {
-                    next ROW unless $row->{$c} !~ $opn;
+                    next ROW unless $row_h->{$c} !~ $opn;
                 } elsif ($op eq 'pos') {
-                    next ROW unless index($row->{$c}, $opn) >= 0;
+                    next ROW unless index($row_h->{$c}, $opn) >= 0;
                 } elsif ($op eq '!pos') {
-                    next ROW if index($row->{$c}, $opn) >= 0;
+                    next ROW if index($row_h->{$c}, $opn) >= 0;
                 } else {
                     die "BUG: Unknown op $op";
                 }
             }
-            push @rows, $row;
+            push @rows, $row_h;
         }
 
         $log->tracef("(read_table_func) Ordering ...");
