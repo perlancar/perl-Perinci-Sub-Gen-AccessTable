@@ -104,12 +104,16 @@ _
                 summary => 'Only return results from a certain position',
                 default => 1,
             }],
-            q => ['str' => {
-                arg_category => 'filter',
-                summary => 'Filter using string matching',
-            }],
         },
     };
+
+    # add search argument
+    if ($opts->{enable_search} // 1) {
+        $func_spec->{args}{q} = ['str' => {
+            arg_category => 'filter',
+            summary => 'Search',
+        }];
+    }
 
     # add filter arguments for each table column
 
@@ -312,6 +316,7 @@ sub _parse_query {
     }
     $query->{filters}       = \@filters;
     $query->{filter_fields} = \@filter_fields;
+    $query->{q}             = $args->{q};
 
     my @sort_fields;
     my @sorts;
@@ -396,6 +401,23 @@ sub _gen_func {
         no warnings; # silence undef warnings when comparing row values
 
         $log->tracef("(read_table_func) Filtering ...");
+
+        my @search_fields = grep {
+            $col_specs->{$_}{type} =~ /^(str)$/
+        } @columns;
+        my $search_opts = {ci => $opts->{case_insensitive_search}};
+        my $search_re;
+        my $q = $query->{q};
+        if (defined $q) {
+            if ($opts->{word_search}) {
+                $search_re = $opts->{case_insensitive_search} ?
+                    qr/\b$q\b/i : qr/\b$q\b/;
+            } else {
+                $search_re = $opts->{case_insensitive_search} ?
+                    qr/$q/i : qr/$q/;
+            }
+        }
+
       ROW:
         for my $row0 (@$data) {
             my $row_h;
@@ -448,6 +470,22 @@ sub _gen_func {
                     die "BUG: Unknown op $op";
                 }
             }
+
+            if (defined $q) {
+                if ($opts->{custom_search}) {
+                    next ROW unless $opts->{custom_search}->(
+                        $row_h, $q, $search_opts);
+                } else {
+                    my $match;
+                    for my $f (@search_fields) {
+                        if ($row_h->{$f} =~ $search_re) {
+                            $match++; last;
+                        }
+                    }
+                    next ROW unless $match;
+                }
+            }
+
             push @rows, $row_h;
         }
 
@@ -661,6 +699,35 @@ _
         default_result_limit => ['int' => {
             summary => "Supply default 'result_limit' value for function spec",
         }],
+        enable_search => ['bool' => {
+            summary => "Add search argument (q)",
+            default => 1,
+        }],
+        word_search => ['bool' => {
+            summary => "If enable, instead of string matching, ".
+                "use word searching",
+            description => <<'_',
+
+For example, if search term is 'pine' and column value is 'green pineapple',
+search will match if word_search=false, but won't match under word_search.
+
+_
+            default => 0,
+        }],
+        case_insensitive_search => ['bool' => {
+            summary => 'Perform case-insensitive search',
+            default => 1,
+        }],
+        custom_search => ['code' => {
+            summary => 'Supply custom searching',
+            description => <<'_',
+
+Code will be supplied ($row, $q, $opts) where $q is the search term (the
+argument q) and $row the hashref row value. $opts is {ci=>0|1}. Code should
+return true if row matches search term.
+
+_
+        }],
     },
 };
 sub gen_read_table_func {
@@ -684,6 +751,10 @@ sub gen_read_table_func {
         default_random           => $args{default_random},
         default_result_limit     => $args{default_result_limit},
         default_filters          => $args{default_filters},
+        enable_search            => $args{enable_search} // 1,
+        custom_search            => $args{custom_search},
+        word_search              => $args{word_search},
+        case_insensitive_search  => $args{case_insensitive_search} // 1,
     };
 
     my $res;

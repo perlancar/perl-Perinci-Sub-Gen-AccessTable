@@ -141,6 +141,14 @@ test_gen(
 );
 
 test_gen(
+    name => 'disable search',
+    table_data => [],
+    table_spec => $table_spec,
+    other_args => {enable_search=>0},
+    status => 200,
+);
+
+test_gen(
     name => 'default_sort',
     table_data => $table_data,
     table_spec => $table_spec,

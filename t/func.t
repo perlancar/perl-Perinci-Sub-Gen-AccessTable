@@ -213,5 +213,66 @@ test_gen(
     },
 );
 
+test_gen(
+    name => 'search',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {q=>"b"}, 1, 'search b');
+        test_query($func, {q=>"B"}, 1, 'search B');
+    },
+);
+
+test_gen(
+    name => 'case sensitive search',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {case_insensitive_search=>0},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {q=>"b"}, 1, 'search b');
+        test_query($func, {q=>"B"}, 0, 'search B');
+    },
+);
+
+test_gen(
+    name => 'word search',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {word_search=>1},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {q=>"b"}, 0, 'word search b (1)');
+        test_query($func, {q=>"aa"}, 2, 'word search aa (2)');
+    },
+);
+
+test_gen(
+    name => 'custom search',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {custom_search=>sub {
+                       my ($row, $q, $opts) = shift;
+                       $row->{i} % 2;
+                   }},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {q=>"whatever"}, 2, 'search whatever');
+    },
+);
+
 DONE_TESTING:
 done_testing();

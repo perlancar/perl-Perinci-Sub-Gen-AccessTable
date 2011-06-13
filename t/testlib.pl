@@ -41,8 +41,13 @@ sub test_gen {
             my $args = $spec->{args};
             for my $a (qw/show_field_names detail fields
                           sort random result_limit result_start
-                          q/) {
+                         /) {
                 ok($args->{$a}, "common arg '$a' generated");
+            }
+            if (!defined($fargs{enable_search}) || $fargs{enable_search}) {
+                ok( $args->{q}, "search arg 'q' generated");
+            } else {
+                ok(!$args->{q}, "search arg 'q' not generated");
             }
         }
 
