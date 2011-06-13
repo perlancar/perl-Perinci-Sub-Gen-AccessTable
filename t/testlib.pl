@@ -26,7 +26,7 @@ sub test_gen {
 
         if ($args{status}) {
             is($res->[0], $args{status}, "status = $args{status}") or
-                do { diag explain $res; last };
+                do { diag explain $res; return };
         }
 
         if ($res->[0] == 200) {
