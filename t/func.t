@@ -25,8 +25,8 @@ my $table_spec = {
         s3 => ['str*'   => {column_index=>2, column_filterable_regex=>0}],
         i  => ['int*'   => {column_index=>3, }],
         f  => ['float*' => {column_index=>4, }],
-        a  => ['array*' => {column_index=>5, }],
-        b  => ['bool*'  => {column_index=>6, column_sortable=>0, }],
+        a  => ['array*' => {column_index=>5, column_sortable=>0, }],
+        b  => ['bool*'  => {column_index=>6, }],
     },
     pk => 's',
 };
@@ -47,15 +47,34 @@ test_gen(
         $fres = $func->(sort=>"x");
         is($fres->[0], 400, "sort on unknown sort fields -> fail");
 
-        $fres = $func->(sort=>"-b");
+        $fres = $func->(sort=>"-a");
         is($fres->[0], 400, "sort on unsortable fields -> fail");
 
-        $fres = $func->(sort=>"-b");
-        is($fres->[0], 400, "unknown sort fields -> fail");
-
-        $fres = $func->(sort=>"s");
+        $fres = $func->(sort=>"s", detail=>1);
         subtest "ascending sort" => sub {
-            is($fres->[0], 200, "status");
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            my @r = map {$_->{s}} @{$fres->[2]};
+            is_deeply(\@r, [qw/a1 a2 a3 b1/], "sort result")
+                or diag explain \@r;
+        };
+
+        $fres = $func->(sort=>"-s", detail=>1);
+        subtest "descending sort" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            my @r = map {$_->{s}} @{$fres->[2]};
+            is_deeply(\@r, [qw/b1 a3 a2 a1/], "sort result")
+                or diag explain \@r;
+        };
+
+        $fres = $func->(sort=>"b, -s", detail=>1);
+        subtest "multiple fields sort" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            my @r = map {$_->{s}} @{$fres->[2]};
+            is_deeply(\@r, [qw/b1 a1 a3 a2/], "sort result")
+                or diag explain \@r;
         };
     },
 );
