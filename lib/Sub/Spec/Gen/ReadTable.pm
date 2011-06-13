@@ -118,8 +118,6 @@ _
     for my $cname (keys %{$table_spec->{columns}}) {
         my $cspec = _parse_schema($table_spec->{columns}{$cname});
         $col_specs->{$cname} = $cspec;
-        my $cf = $cspec->{attr_hashes}[0]{column_filterable};
-        next if defined($cf) && !$cf;
         my $a = $cname;
         if (exists $func_spec->{args}{$a}) {
             $a = "${a}_field";
@@ -128,6 +126,8 @@ _
             }
         }
         $col2arg->{$cname} = $a;
+        my $cf = $cspec->{attr_hashes}[0]{column_filterable};
+        next if defined($cf) && !$cf;
         my $t = $cspec->{type};
         if ($t eq 'bool') {
             return [400, "Clash of $t filter argument: $a"]
