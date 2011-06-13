@@ -321,6 +321,9 @@ sub _parse_query {
             my $desc = $f =~ s/^-//;
             return [400, "Unknown field in sort: $f"]
                 unless $f ~~ @columns;
+            my $cs = $col_specs->{$f}{attr_hashes}[0]{column_sortable};
+            return [400, "Field $f is not sortable"]
+                unless !defined($cs) || $cs;
             my $t = $col_specs->{$f}{type};
             my $op = $t =~ /^(int|float)$/ ? '<=>' : 'cmp';
             #print "t=$t, op=$op\n";
