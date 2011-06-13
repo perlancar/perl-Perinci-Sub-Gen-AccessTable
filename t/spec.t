@@ -232,9 +232,35 @@ test_gen(
     },
 );
 
-# test default_filters
+test_gen(
+    name => 'default_show_field_names',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_show_field_names=>0},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
 
-# test default_show_field_names
+        my $fres;
+        $fres = $func->(fields=>['s', 'b']);
+        subtest "default_show_field_names 0" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            is_deeply($fres->[2],
+                      [['a1', 0],
+                       ['b1', 0],
+                       ['a3', 1],
+                       ['a2', 1]],
+                      "sort result")
+                or diag explain $fres->[2];
+        };
+    },
+);
+
+# test default_filters
 
 # test default_result_limit
 
