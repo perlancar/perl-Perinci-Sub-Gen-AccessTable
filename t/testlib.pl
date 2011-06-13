@@ -106,7 +106,8 @@ sub test_query {
     my $res = $func->(%$args);
     subtest $name => sub {
         is($res->[0], 200, "status = 200");
-        is(scalar(@{$res->[2]}), $num_results, "num_results = $num_results");
+        is(scalar(@{$res->[2]}), $num_results, "num_results = $num_results")
+            or diag explain $res->[2];
     };
 }
 

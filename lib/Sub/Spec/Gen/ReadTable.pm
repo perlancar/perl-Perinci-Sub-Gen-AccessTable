@@ -370,6 +370,9 @@ sub _gen_func {
         return $res unless $res->[0] == 200;
         my ($query) = @{$res->[2]};
 
+        $query->{filters} = $opts->{default_filters}
+            if defined($opts->{default_filters}) && !@{$query->{filters}};
+
         my @columns = keys %$col_specs;
 
         # retrieve data
@@ -640,6 +643,11 @@ _
         default_fields => ['str' => {
             summary => "Supply default 'fields' value for function spec",
         }],
+        # not yet documented
+        #default_filters => ['array' => {
+        #    of => 'array*', # XXX filter structure
+        #    summary => "Supply default filters",
+        #}],
         default_show_field_names => ['bool' => {
             summary => "Supply default 'show_field_names' ".
                 "value for function spec",
@@ -675,6 +683,7 @@ sub gen_read_table_func {
         default_sort             => $args{default_sort},
         default_random           => $args{default_random},
         default_result_limit     => $args{default_result_limit},
+        default_filters          => $args{default_filters},
     };
 
     my $res;
