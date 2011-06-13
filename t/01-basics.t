@@ -11,6 +11,39 @@ use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
 # XXX test: pk must be in columns
 
 test_gen(
+    name => 'pk must be in columns',
+    table_data => [],
+    table_spec => {
+        columns => {
+            a => ['int*' => {column_index=>0, }],
+        },
+        pk => 'b',
+    },
+    status => 400,
+);
+
+test_gen(
+    name => 'pk must exist in table_spec',
+    table_data => [],
+    table_spec => {
+        columns => {
+            a => ['int*' => {column_index=>0, }],
+        },
+    },
+    status => 400,
+);
+
+test_gen(
+    name => 'columns must exist in table_spec',
+    table_data => [],
+    table_spec => {
+    },
+    status => 400,
+);
+
+goto DONE_TESTING;
+
+test_gen(
     name => 'spec generation tests',
     table_data => [
         {s=>'a1', s2=>'', s3=>'a' , i=>1 , f=>0.1, a=>[qw//]   , b=>0},

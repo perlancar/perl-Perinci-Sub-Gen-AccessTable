@@ -32,6 +32,16 @@ sub _is_aoh {
 sub _gen_spec {
     my ($table_spec, $opts) = @_;
 
+    # XXX schema
+    $table_spec->{columns} or
+        return [400, "Invalid table_spec: columns not specified"];
+    ref($table_spec->{columns}) eq 'HASH' or
+        return [400, "Invalid table_spec: columns must be hash"];
+    $table_spec->{pk} or
+        return [400, "Invalid table_spec: pk not specified"];
+    exists($table_spec->{columns}{ $table_spec->{pk} }) or
+        return [400, "Invalid table_spec: pk not in columns"];
+
     # add general arguments
 
     my $func_spec = {
