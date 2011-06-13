@@ -549,6 +549,7 @@ sub _gen_func {
 
 $SPEC{gen_read_table_func} = {
     summary => 'Generate function (and its spec) to read table data',
+    description_fmt => 'org',
     description => <<'_',
 
 The generated function acts like a simple single table SQL SELECT query,
@@ -556,52 +557,8 @@ featuring filtering, sorting, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
 API function.
 
-The spec is pretty barebones currently. You can decorate with summary and
-description afterwards.
-
-_
-    args => {
-        table_data => ['any*' => {
-            summary => 'Data',
-            description => <<'_',
-
-Table data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
-below).
-
-Passing a subroutine lets you fetch data dynamically. The subroutine will be
-called with these arguments ($query) and is expected to return an AoA or AoH.
-$query is a hashref which contains information about the query, e.g. 'args' (the
-original arguments passed to the generated function, e.g. {random=>1,
-result_limit=>1, field1_match=>'foo'}), 'mentioned_fields' which lists fields
-that are mentioned in either filtering arguments or fields or ordering,
-'requested_fields' (fields mentioned in list of fields to be returned),
-'sort_fields' (fields mentioned in sort arguments), 'filter_fields' (fields
-mentioned in filter arguments), etc.
-
-The subroutine can do filtering/ordering/paging beforehand for efficiency, e.g.
-SELECT-ing from a DBI table using the appropriate columns, ORDER, WHERE, and
-LIMIT clauses. Either way, for consistency, the generated function will still
-apply filtering/ordering/paging to the data returned by this subroutine, so the
-subroutine can choose to pass the complete table data anyway.
-
-_
-        }],
-        table_spec => ['hash*' => {
-            summary => 'Table specification',
-            description_fmt => 'org',
-            description => <<'_',
-
-A hashref with these required keys: columns, pk. Columns is a hashref of column
-specification with column name as keys, while table_pk specifies which column is
-to be designated as the primary key. Currently only single-column PK is allowed.
-
-* Column specification
-
-A Sah schema with these required clauses: column_index (an integer starting from
-0 that specifies position of column in the data, especially required with AoA
-data) and these optional clauses: column_sortable (a boolean stating whether
-column can be sorted, default is true), column_filterable (a boolean stating
-whether column can be mentioned in filter options).
+The generated spec is pretty barebones currently. You can decorate with summary
+and description afterwards.
 
 * Resulting function
 
@@ -672,6 +629,51 @@ is set to 0.
 *** "FIELD_starts_with" string argument for each str field (not implemented)
 
 *** "FIELD_ends_with" string argument for each str field (not implemented)
+
+_
+    args => {
+        table_data => ['any*' => {
+            summary => 'Data',
+            description_fmt => 'org',
+            description => <<'_',
+
+Table data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
+below).
+
+Passing a subroutine lets you fetch data dynamically. The subroutine will be
+called with these arguments ($query) and is expected to return an AoA or AoH.
+$query is a hashref which contains information about the query, e.g. 'args' (the
+original arguments passed to the generated function, e.g. {random=>1,
+result_limit=>1, field1_match=>'foo'}), 'mentioned_fields' which lists fields
+that are mentioned in either filtering arguments or fields or ordering,
+'requested_fields' (fields mentioned in list of fields to be returned),
+'sort_fields' (fields mentioned in sort arguments), 'filter_fields' (fields
+mentioned in filter arguments), etc.
+
+The subroutine can do filtering/ordering/paging beforehand for efficiency, e.g.
+SELECT-ing from a DBI table using the appropriate columns, ORDER, WHERE, and
+LIMIT clauses. Either way, for consistency, the generated function will still
+apply filtering/ordering/paging to the data returned by this subroutine, so the
+subroutine can choose to pass the complete table data anyway.
+
+_
+        }],
+        table_spec => ['hash*' => {
+            summary => 'Table specification',
+            description_fmt => 'org',
+            description => <<'_',
+
+A hashref with these required keys: columns, pk. Columns is a hashref of column
+specification with column name as keys, while table_pk specifies which column is
+to be designated as the primary key. Currently only single-column PK is allowed.
+
+* Column specification
+
+A Sah schema with these required clauses: column_index (an integer starting from
+0 that specifies position of column in the data, especially required with AoA
+data) and these optional clauses: column_sortable (a boolean stating whether
+column can be sorted, default is true), column_filterable (a boolean stating
+whether column can be mentioned in filter options).
 
 _
         }],
