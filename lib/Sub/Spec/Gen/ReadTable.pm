@@ -226,7 +226,7 @@ _
 }
 
 sub _parse_query {
-    my ($args, $table_spec, $col_specs, $col2arg) = @_;
+    my ($args, $opts, $table_spec, $col_specs, $col2arg) = @_;
     my $query = {args=>$args};
 
     my @columns = keys %$col_specs;
@@ -316,7 +316,35 @@ sub _parse_query {
     }
     $query->{filters}       = \@filters;
     $query->{filter_fields} = \@filter_fields;
-    $query->{q}             = $args->{q};
+
+    my @searchable_fields = grep {
+        !defined($col_specs->{$_}{attr_hashes}[0]{column_searchable}) ||
+            $col_specs->{$_}{attr_hashes}[0]{column_searchable}
+        } @columns;
+    my $search_opts = {ci => $opts->{case_insensitive_search}};
+    my $search_re;
+    my $q = $args->{q};
+    if (defined $q) {
+        if ($opts->{word_search}) {
+            $search_re = $opts->{case_insensitive_search} ?
+                qr/\b$q\b/i : qr/\b$q\b/;
+        } else {
+            $search_re = $opts->{case_insensitive_search} ?
+                qr/$q/i : qr/$q/;
+        }
+    }
+    $query->{q} = $args->{q};
+    $query->{search_opts} = $args->{search_opts};
+    unless ($opts->{custom_search}) {
+        $query->{search_fields} = \@searchable_fields;
+        $query->{search_str_fields} = [grep {
+            $col_specs->{$_}{type} =~ /^(str)$/
+        } @searchable_fields];
+        $query->{search_array_fields} = [grep {
+            $col_specs->{$_}{type} =~ /^(array)$/
+        } @searchable_fields];
+        $query->{search_re} = $search_re;
+    }
 
     my @sort_fields;
     my @sorts;
@@ -371,7 +399,8 @@ sub _gen_func {
                 unless ref($args{fields}) eq 'ARRAY';
         }
 
-        my $res = _parse_query(\%args, $table_spec, $col_specs, $col2arg);
+        my $res = _parse_query(
+            \%args, $opts, $table_spec, $col_specs, $col2arg);
         return $res unless $res->[0] == 200;
         my ($query) = @{$res->[2]};
 
@@ -401,29 +430,8 @@ sub _gen_func {
         no warnings; # silence undef warnings when comparing row values
 
         $log->tracef("(read_table_func) Filtering ...");
-
-        my @searchable_fields = grep {
-            !defined($col_specs->{$_}{attr_hashes}[0]{column_searchable}) ||
-            $col_specs->{$_}{attr_hashes}[0]{column_searchable}
-        } @columns;
-        my @search_str_fields = grep {
-            $col_specs->{$_}{type} =~ /^(str)$/
-        } @searchable_fields;
-        my @search_ary_fields = grep {
-                $col_specs->{$_}{type} =~ /^(array)$/
-        } @searchable_fields;
-        my $search_opts = {ci => $opts->{case_insensitive_search}};
-        my $search_re;
         my $q = $query->{q};
-        if (defined $q) {
-            if ($opts->{word_search}) {
-                $search_re = $opts->{case_insensitive_search} ?
-                    qr/\b$q\b/i : qr/\b$q\b/;
-            } else {
-                $search_re = $opts->{case_insensitive_search} ?
-                    qr/$q/i : qr/$q/;
-            }
-        }
+        my $search_re = $query->{search_re};
 
       ROW:
         for my $row0 (@$data) {
@@ -481,16 +489,16 @@ sub _gen_func {
             if (defined $q) {
                 if ($opts->{custom_search}) {
                     next ROW unless $opts->{custom_search}->(
-                        $row_h, $q, $search_opts);
+                        $row_h, $q, $query->{search_opts});
                 } else {
                     my $match;
-                    for my $f (@search_str_fields) {
+                    for my $f (@{$query->{search_str_fields}}) {
                         if ($row_h->{$f} =~ $search_re) {
                             $match++; last;
                         }
                     }
                   ARY_FIELD:
-                    for my $f (@search_ary_fields) {
+                    for my $f (@{$query->{search_array_fields}}) {
                         for my $el (@{$row_h->{$f}}) {
                             if ($el =~ $search_re) {
                                 $match++; last ARY_FIELD;
