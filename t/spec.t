@@ -276,7 +276,20 @@ test_gen(
     },
 );
 
-# test default_result_limit
+test_gen(
+    name => 'default_result_limit',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_result_limit=>2},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {}, 2, 'default result_limit');
+        test_query($func, {result_limit=>3}, 3, 'explicit result_limit');
+    },
+);
 
 DONE_TESTING:
 done_testing();
