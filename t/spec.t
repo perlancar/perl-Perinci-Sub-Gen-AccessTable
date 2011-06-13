@@ -181,9 +181,37 @@ test_gen(
     },
 );
 
-# test default_detail
+test_gen(
+    name => 'default_fields',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_fields=>'s,b'},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
+
+        my $fres;
+        $fres = $func->();
+        subtest "default_fields s,b" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            is_deeply($fres->[2], [
+                {s=>'a1', b=>0},
+                {s=>'b1', b=>0},
+                {s=>'a3', b=>1},
+                {s=>'a2', b=>1},
+            ], "sort result")
+                or diag explain $fres->[2];
+        };
+    },
+);
 
 # test default_fields
+
+# test default_detail
 
 # test default_filters
 
