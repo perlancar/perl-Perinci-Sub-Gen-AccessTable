@@ -200,5 +200,18 @@ test_gen(
     },
 );
 
+test_gen(
+    name => 'function table_data',
+    table_data => sub { $table_data },
+    table_spec => $table_spec,
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {b=>1}, 2, 'bool filter: F=1');
+    },
+);
+
 DONE_TESTING:
 done_testing();

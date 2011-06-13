@@ -384,7 +384,7 @@ sub _gen_func {
                 unless eval { $data = $table_data->($query) };
             return [500, "BUG: Data returned from function is not an array".
                         ", please report to administrator"]
-                unless _is_aoa($table_data) || _is_aoh($table_data);
+                unless _is_aoa($data) || _is_aoh($data);
         } else {
             # this should be impossible, already checked earlier
             die "BUG: Data is not an array";
