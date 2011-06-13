@@ -209,6 +209,29 @@ test_gen(
     },
 );
 
+test_gen(
+    name => 'default_detail',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_detail=>1},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+        my $spec = $res->[2]{spec};
+        my $args = $spec->{args};
+
+        my $fres;
+        $fres = $func->();
+        subtest "default_detail 1" => sub {
+            is($fres->[0], 200, "status")
+                or diag explain $fres;
+            is_deeply($fres->[2], $table_data, "sort result")
+                or diag explain $fres->[2];
+        };
+    },
+);
+
 # test default_fields
 
 # test default_detail
