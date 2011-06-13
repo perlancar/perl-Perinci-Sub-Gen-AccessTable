@@ -157,10 +157,10 @@ test_gen(
         test_query($func, {min_f=>0.2}, 3, 'float filter: min_F');
         test_query($func, {max_f=>0.2}, 2, 'float filter: max_F');
 
-        test_query($func, {has_a=>[qw/b/]}, 2, 'array filter: has_F b');
-        test_query($func, {lacks_a=>[qw/b/]}, 2, 'array filter: lacks_F b');
-        test_query($func, {has_a=>[qw/a b/]}, 1, 'array filter: has_F a b');
-        test_query($func, {lacks_a=>[qw/a b/]}, 1, 'array filter: lacks_F a b');
+        test_query($func, {has_a=>[qw/t1/]}, 2, 'array filter: has_F t1');
+        test_query($func, {lacks_a=>[qw/t2/]}, 2, 'array filter: lacks_F t2');
+        test_query($func, {has_a=>[qw/t1 t2/]}, 1, 'array filter: has_F t1 t2');
+        test_query($func, {lacks_a=>[qw/t1 t2/]}, 1, 'ary f: lacks_F t1 t2');
 
         test_query($func, {s=>'a1'}, 1, 'str filter: F');
         test_query($func, {min_s=>'a2'}, 3, 'str filter: min_F');
@@ -229,6 +229,34 @@ test_gen(
 
         test_query($func, {q=>"b"}, 1, 'search b');
         test_query($func, {q=>"B"}, 1, 'search B');
+    },
+);
+
+test_gen(
+    name => 'search on array fields',
+    table_data => [
+        {id=>1, a=>[qw/pine apple/]},
+        {id=>2, a=>[qw/pineapple/]},
+        {id=>3, a=>[qw//]},
+    ],
+    table_spec => {
+        columns => {
+            id => ['int*' => {
+                column_index => 0,
+            }],
+            a => ['array*' => {
+                column_index => 1,
+            }],
+        },
+        pk => 'id',
+    },
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {q=>'Apple'}, 2, 'search Apple');
+        test_query($func, {q=>'pineapple'}, 1, 'search pineapple');
     },
 );
 

@@ -402,9 +402,16 @@ sub _gen_func {
 
         $log->tracef("(read_table_func) Filtering ...");
 
-        my @search_fields = grep {
-            $col_specs->{$_}{type} =~ /^(str)$/
+        my @searchable_fields = grep {
+            !defined($col_specs->{$_}{attr_hashes}[0]{column_searchable}) ||
+            $col_specs->{$_}{attr_hashes}[0]{column_searchable}
         } @columns;
+        my @search_str_fields = grep {
+            $col_specs->{$_}{type} =~ /^(str)$/
+        } @searchable_fields;
+        my @search_ary_fields = grep {
+                $col_specs->{$_}{type} =~ /^(array)$/
+        } @searchable_fields;
         my $search_opts = {ci => $opts->{case_insensitive_search}};
         my $search_re;
         my $q = $query->{q};
@@ -477,9 +484,17 @@ sub _gen_func {
                         $row_h, $q, $search_opts);
                 } else {
                     my $match;
-                    for my $f (@search_fields) {
+                    for my $f (@search_str_fields) {
                         if ($row_h->{$f} =~ $search_re) {
                             $match++; last;
+                        }
+                    }
+                  ARY_FIELD:
+                    for my $f (@search_ary_fields) {
+                        for my $el (@{$row_h->{$f}}) {
+                            if ($el =~ $search_re) {
+                                $match++; last ARY_FIELD;
+                            }
                         }
                     }
                     next ROW unless $match;
@@ -599,9 +614,10 @@ separated by comma.
 
 ** *q* => STR
 
-A filtering option. By default, all fields will be searched using simple
-case-insensitive string search. In the future, a method to customize searching
-will be allowed.
+A filtering option. By default, all fields except those specified with
+column_searchable=0 will be searched using simple case-insensitive string
+search. There are a few options to customize this, using these gen arguments:
+*word_search*, *case_insensitive_search*, and *custom_search*.
 
 ** Filter arguments
 
