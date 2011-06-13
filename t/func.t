@@ -135,7 +135,40 @@ test_gen(
     },
 );
 
-# test filtering
+($table_data, $table_spec) = gen_test_data(1);
+
+test_gen(
+    name => 'filtering, aoa data',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {b=>1}, 2, 'bool filter: F=1');
+        test_query($func, {b=>0}, 2, 'bool filter: F=0');
+
+        test_query($func, {i=>4}, 1, 'int filter: F');
+        test_query($func, {min_i=>4}, 1, 'int filter: min_F');
+        test_query($func, {max_i=>2}, 3, 'int filter: max_F');
+
+        test_query($func, {f=>0.2}, 1, 'float filter: F');
+        test_query($func, {min_f=>0.2}, 3, 'float filter: min_F');
+        test_query($func, {max_f=>0.2}, 2, 'float filter: max_F');
+
+        test_query($func, {s=>'a1'}, 1, 'str filter: F');
+        test_query($func, {min_s=>'a2'}, 3, 'str filter: min_F');
+        test_query($func, {max_s=>'a2'}, 2, 'str filter: max_F');
+        test_query($func, {s_contain=>'a'}, 3, 'str filter: F_contain');
+        test_query($func, {s_not_contain=>'a'}, 1, 'str filter: F_not_contain');
+        test_query($func, {s_match=>'[12]'}, 3, 'str filter: F_match');
+        test_query($func, {s_not_match=>'[12]'}, 1, 'str filter: F_not_match');
+
+        test_query($func, {b=>0, min_i=>2}, 1, 'multiple filters');
+
+    },
+);
 
 # test paging
 

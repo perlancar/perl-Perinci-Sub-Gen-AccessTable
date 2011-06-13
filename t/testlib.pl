@@ -53,12 +53,22 @@ sub test_gen {
 }
 
 sub gen_test_data {
+    my ($aoa_data) = @_;
+
     my $table_data = [
         {s=>'a1', s2=>'', s3=>'a' , i=>1 , f=>0.1, a=>[qw//]   , b=>0},
         {s=>'b1', s2=>'', s3=>'aa', i=>2 , f=>0.2, a=>[qw/b/]  , b=>0},
         {s=>'a3', s2=>'', s3=>'aa', i=>4 , f=>1.1, a=>[qw/a b/], b=>1},
         {s=>'a2', s2=>'', s3=>'a' , i=>-3, f=>1.2, a=>[qw/a/]  , b=>1},
     ];
+    if ($aoa_data) {
+        for my $row (@$table_data) {
+            $row = [
+                $row->{s}, $row->{s2}, $row->{s3},
+                $row->{i}, $row->{f},  $row->{a},  $row->{b},
+            ];
+        }
+    }
 
     my $table_spec = {
         columns => {
@@ -88,6 +98,16 @@ sub test_random_order {
     is_deeply([sort {$a cmp $b} @x],
               [sort {$a cmp $b} @$elems], "random order ($n runs)")
         or diag explain \@x;
+}
+
+sub test_query {
+    my ($func, $args, $num_results, $name) = @_;
+
+    my $res = $func->(%$args);
+    subtest $name => sub {
+        is($res->[0], 200, "status = 200");
+        is(scalar(@{$res->[2]}), $num_results, "num_results = $num_results");
+    };
 }
 
 1;
