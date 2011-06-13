@@ -68,14 +68,6 @@ _
                 of => 'str*',
                 arg_category => 'field selection',
                 summary => 'Select fields to return',
-                description => <<'_',
-
-When off, will return an array of values without field names (array/list).
-
-Default is off, will be turned on by default when 'fields' or 'detail' options
-are specified.
-
-_
                 default => $opts->{default_fields},
             }],
             sort => ['str' => {
