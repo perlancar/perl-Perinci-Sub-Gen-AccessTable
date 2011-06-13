@@ -871,8 +871,6 @@ function can then be run via command-line using L<Sub::Spec::CmdLine> (as
 demonstrated in Synopsis), or served via REST using L<Sub::Spec::HTTP::Server>,
 or consumed normally by Perl programs.
 
-Currently only Perl data (AoH, AoA, subref) are supported.
-
 This module uses L<Log::Any> for logging framework.
 
 This module's functions has L<Sub::Spec> specs.
