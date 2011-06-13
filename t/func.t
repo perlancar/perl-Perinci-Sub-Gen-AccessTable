@@ -261,6 +261,38 @@ test_gen(
 );
 
 test_gen(
+    name => 'column_searchable=0',
+    table_data => [
+        {id=>1, s=>'a', s2=>'d'},
+        {id=>2, s=>'b', s2=>'e'},
+        {id=>3, s=>'c', s2=>'f'},
+    ],
+    table_spec => {
+        columns => {
+            id => ['int*' => {
+                column_index => 0,
+            }],
+            s => ['str*' => {
+                column_index => 1,
+                column_searchable => 0,
+            }],
+            s2 => ['str*' => {
+                column_index => 2,
+            }],
+        },
+        pk => 'id',
+    },
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {q=>'a'}, 0, "doesn't search non-searchable column");
+        test_query($func, {q=>'e'}, 1, "search searchable column");
+    },
+);
+
+test_gen(
     name => 'case sensitive search',
     table_data => $table_data,
     table_spec => $table_spec,
