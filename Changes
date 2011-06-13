@@ -1,5 +1,17 @@
 Revision history for Sub-Spec-Gen-ReadTable
 
+0.02     2011-06-13
+
+         [ENHANCEMENTS]
+
+         - Generated function can search array fields.
+
+         - Column specification clause: column_searchable (default 1) which can
+           be set to false to exclude column from searching.
+
+         - Provide search data (search_fields, search_re) in query.
+
+
 0.01     2011-06-13
 
          First release.
