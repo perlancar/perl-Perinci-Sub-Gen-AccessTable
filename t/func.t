@@ -157,6 +157,11 @@ test_gen(
         test_query($func, {min_f=>0.2}, 3, 'float filter: min_F');
         test_query($func, {max_f=>0.2}, 2, 'float filter: max_F');
 
+        test_query($func, {has_a=>[qw/b/]}, 2, 'array filter: has_F b');
+        test_query($func, {lacks_a=>[qw/b/]}, 2, 'array filter: lacks_F b');
+        test_query($func, {has_a=>[qw/a b/]}, 1, 'array filter: has_F a b');
+        test_query($func, {lacks_a=>[qw/a b/]}, 1, 'array filter: lacks_F a b');
+
         test_query($func, {s=>'a1'}, 1, 'str filter: F');
         test_query($func, {min_s=>'a2'}, 3, 'str filter: min_F');
         test_query($func, {max_s=>'a2'}, 2, 'str filter: max_F');
