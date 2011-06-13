@@ -170,7 +170,35 @@ test_gen(
     },
 );
 
-# test paging
+test_gen(
+    name => 'paging',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query(
+            $func, {sort=>"s", result_limit=>2},
+            sub {
+                my ($rows) = @_;
+                is(scalar(@$rows), 2, "num of results = 2");
+                is($rows->[0], "a1", "row #1");
+                is($rows->[1], "a2", "row #2");
+            },
+            'result_limit after ordering');
+        test_query(
+            $func, {sort=>"s", result_start=>3, result_limit=>2},
+            sub {
+                my ($rows) = @_;
+                is(scalar(@$rows), 2, "num of results = 2");
+                is($rows->[0], "a3", "row #1");
+                is($rows->[1], "b1", "row #2");
+            },
+            'result_start + result_limit');
+    },
+);
 
 DONE_TESTING:
 done_testing();

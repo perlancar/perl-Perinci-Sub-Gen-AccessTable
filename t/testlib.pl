@@ -101,14 +101,21 @@ sub test_random_order {
 }
 
 sub test_query {
-    my ($func, $args, $num_results, $name) = @_;
+    my ($func, $args, $test, $name) = @_;
 
     my $res = $func->(%$args);
     subtest $name => sub {
-        is($res->[0], 200, "status = 200");
-        is(scalar(@{$res->[2]}), $num_results, "num_results = $num_results")
-            or diag explain $res->[2];
+        is($res->[0], 200, "status = 200")
+            or diag explain $res;
+        if (ref($test) eq 'CODE') {
+            $test->($res->[2]);
+        } else {
+            is(scalar(@{$res->[2]}), $test, "num_results = $test")
+                or diag explain $res->[2];
+        }
     };
+
+    $res->[2];
 }
 
 1;
