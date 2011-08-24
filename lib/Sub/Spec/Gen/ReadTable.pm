@@ -122,7 +122,7 @@ _
             }
         }
         $col2arg->{$cname} = $a;
-        my $cf = $cspec->{attr_hashes}[0]{column_filterable};
+        my $cf = $cspec->{clause_sets}[0]{column_filterable};
         next if defined($cf) && !$cf;
         my $t = $cspec->{type};
         if ($t eq 'bool') {
@@ -189,7 +189,7 @@ _
                     "certain text",
                 arg_category => "filter for $cname",
             }];
-            my $cf = $cspec->{attr_hashes}[0]{column_filterable_regex};
+            my $cf = $cspec->{clause_sets}[0]{column_filterable_regex};
             unless (defined($cf) && !$cf) {
                 return [400, "Clash of $t filter argument: ${a}_match"]
                     if $func_spec->{args}{"${a}_match"};
@@ -310,8 +310,8 @@ sub _parse_query {
     $query->{filter_fields} = \@filter_fields;
 
     my @searchable_fields = grep {
-        !defined($col_specs->{$_}{attr_hashes}[0]{column_searchable}) ||
-            $col_specs->{$_}{attr_hashes}[0]{column_searchable}
+        !defined($col_specs->{$_}{clause_sets}[0]{column_searchable}) ||
+            $col_specs->{$_}{clause_sets}[0]{column_searchable}
         } @columns;
     my $search_opts = {ci => $opts->{case_insensitive_search}};
     my $search_re;
@@ -346,7 +346,7 @@ sub _parse_query {
             my $desc = $f =~ s/^-//;
             return [400, "Unknown field in sort: $f"]
                 unless $f ~~ @columns;
-            my $cs = $col_specs->{$f}{attr_hashes}[0]{column_sortable};
+            my $cs = $col_specs->{$f}{clause_sets}[0]{column_sortable};
             return [400, "Field $f is not sortable"]
                 unless !defined($cs) || $cs;
             my $t = $col_specs->{$f}{type};
@@ -434,7 +434,7 @@ sub _gen_func {
                 $row_h = {};
                 for my $c (keys %$col_specs) {
                     $row_h->{$c} = $row0->[
-                        $col_specs->{$c}{attr_hashes}[0]{column_index}];
+                        $col_specs->{$c}{clause_sets}[0]{column_index}];
                 }
             } elsif (ref($row0) eq 'HASH') {
                 $row_h = { %$row0 };
