@@ -7,7 +7,7 @@ use warnings;
 use Log::Any '$log';
 
 use List::Util qw(shuffle);
-use Sub::Spec::Utils; # temp, for _parse_schema
+use Data::Sah::Util;
 
 use Exporter;
 our @ISA = qw(Exporter);
@@ -16,7 +16,7 @@ our @EXPORT_OK = qw(gen_read_table_func);
 our %SPEC;
 
 sub _parse_schema {
-    Sub::Spec::Utils::_parse_schema(@_);
+    Data::Sah::Util::_parse_schema(@_);
 }
 
 sub _is_aoa {
