@@ -207,7 +207,7 @@ test_gen(
 
 test_gen(
     name => 'function table_data',
-    table_data => sub { $table_data },
+    table_data => sub { {data=>$table_data} },
     table_spec => $table_spec,
     status => 200,
     post_test => sub {
