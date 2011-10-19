@@ -219,6 +219,23 @@ test_gen(
 );
 
 test_gen(
+    name => 'function table_data (filtered=>1)',
+    table_data => sub { {data=>$table_data, filtered=>1} },
+    table_spec => $table_spec,
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {b=>1}, 4, 'bool filter: F=1');
+    },
+);
+
+# XXX test sorted=>1
+# XXX test columns_selected=>1
+# XXX test paged=>1 (though this is also exercised in examples/num-and-words
+
+test_gen(
     name => 'search',
     table_data => $table_data,
     table_spec => $table_spec,
