@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+
+# Demonstrate dynamic data (generated from function)
+
+use 5.010;
+use strict;
+use warnings;
+use Lingua::EN::Numbers       qw();
+use Lingua::ID::Nums2Words    qw();
+use Sub::Spec::CmdLine        qw(run);
+use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
+
+our %SPEC;
+
+my $data_sub = sub {
+    my ($query) = shift;
+    my @rows;
+    my $i = $query->{result_start} // 1;
+    my $n = 0;
+    my $N = 25;
+    while (1) {
+        last if $query->{result_limit} && $n >= $query->{result_limit};
+        last if $n >= $N;
+        push @rows, {
+            i=>$i,
+            str_en => Lingua::EN::Numbers::num2en($i),
+            str_id => Lingua::ID::Nums2Words::nums2words($i),
+        };
+        $i++;
+        $n++;
+    }
+    {data => \@rows, paged=>1};
+};
+
+my $res = gen_read_table_func(
+    table_data => $data_sub,
+    table_spec => {
+        summary => 'Numbers with their English and Indonesian spelling',
+        columns => {
+            i => ['int*' => {
+                summary => 'Integer number',
+                column_index => 0,
+                column_sortable => 1,
+            }],
+            str_en => ['str*' => {
+                summary => 'English spelling',
+                column_index => 1,
+                column_sortable => 1,
+            }],
+            str_id => ['str*' => {
+                summary => 'Indonesian spelling',
+                column_index => 2,
+                column_sortable => 1,
+            }],
+        },
+        pk => 'i',
+    },
+);
+die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
+no warnings;
+*num_and_words = $res->[2]{code};
+use warnings;
+$SPEC{num_and_words} = $res->[2]{spec};
+
+run(load=>0, module=>'main', sub=>'num_and_words');

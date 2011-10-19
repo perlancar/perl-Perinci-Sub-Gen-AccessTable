@@ -403,14 +403,23 @@ sub _gen_func {
 
         # retrieve data
         my $data;
+        my $metadata = {};
         if (_is_aoa($table_data) || _is_aoh($table_data)) {
             $data = $table_data;
         } elsif (ref($table_data) eq 'CODE') {
+            my $res;
             return [500, "BUG: Data function died: $@"]
-                unless eval { $data = $table_data->($query) };
-            return [500, "BUG: Data returned from function is not an array".
+                unless eval { $res = $table_data->($query) };
+            return [500, "BUG: Result returned from function is not a hash".
+                        ", please report to administrator"]
+                unless ref($res) eq 'HASH';
+            $data = $res->{data};
+            return [500, "BUG: 'data' key from result is not AoA/AoH".
                         ", please report to administrator"]
                 unless _is_aoa($data) || _is_aoh($data);
+            for (qw/filtered sorted paged columns_selected/) {
+                $metadata->{$_} = $res->{$_};
+            }
         } else {
             # this should be impossible, already checked earlier
             die "BUG: Data is not an array";
@@ -441,6 +450,9 @@ sub _gen_func {
             } else {
                 return [500, "BUG: Invalid row, not a hash/array"];
             }
+
+            goto SKIP_FILTER if $metadata->{filtered};
+
             for my $f (@{$query->{filters}}) {
                 my ($a, $c, $op, $opn) = @$f;
                 if ($op eq 'truth') {
@@ -501,11 +513,15 @@ sub _gen_func {
                 }
             }
 
+          SKIP_FILTER:
+
             push @rows, $row_h;
         }
 
         $log->tracef("(read_table_func) Ordering ...");
-        if ($query->{random}) {
+        if ($metadata->{sorted}) {
+            # do nothing
+        } elsif ($query->{random}) {
             @rows = shuffle @rows;
         } elsif (@{$query->{sorts}}) {
             @rows = sort {
@@ -529,16 +545,19 @@ sub _gen_func {
 
         # perform paging
         $log->tracef("(read_table_func) Paging ...");
-        if ($query->{result_start} > 1) {
-            splice @rows, 0, $query->{result_start}-1;
-        }
-        if (defined $query->{result_limit}) {
-            splice @rows, $query->{result_limit};
+        unless ($metadata->{paged}) {
+            if ($query->{result_start} > 1) {
+                splice @rows, 0, $query->{result_start}-1;
+            }
+            if (defined $query->{result_limit}) {
+                splice @rows, $query->{result_limit};
+            }
         }
 
         # select fields
         $log->tracef("(read_table_func) Selecting fields ...");
         my $pk = $table_spec->{pk};
+        goto SKIP_SELECT_COLUMNS if $metadata->{columns_selected};
       ROW2:
         for my $row (@rows) {
             if (!$args{detail} && !$args{fields}) {
@@ -554,6 +573,7 @@ sub _gen_func {
                 $row = [map {$row->{$_}} @{$query->{requested_fields}}];
             }
         }
+      SKIP_SELECT_COLUMNS:
 
         # return data
         [200, "OK", \@rows];
@@ -657,20 +677,19 @@ Table data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
 below).
 
 Passing a subroutine lets you fetch data dynamically. The subroutine will be
-called with these arguments ($query) and is expected to return an AoA or AoH.
-$query is a hashref which contains information about the query, e.g. 'args' (the
-original arguments passed to the generated function, e.g. {random=>1,
+called with these arguments ($query) and is expected to return a hashref like
+this {data => DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL,
+columns_selected=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is
+assumed to be already paged and won't be paged again; likewise for filtered and
+sorted.
+
+$query is a hashref which contains information about the query, e.g. 'args'
+(the original arguments passed to the generated function, e.g. {random=>1,
 result_limit=>1, field1_match=>'foo'}), 'mentioned_fields' which lists fields
 that are mentioned in either filtering arguments or fields or ordering,
 'requested_fields' (fields mentioned in list of fields to be returned),
 'sort_fields' (fields mentioned in sort arguments), 'filter_fields' (fields
 mentioned in filter arguments), etc.
-
-The subroutine can do filtering/ordering/paging beforehand for efficiency, e.g.
-SELECT-ing from a DBI table using the appropriate columns, ORDER, WHERE, and
-LIMIT clauses. Either way, for consistency, the generated function will still
-apply filtering/ordering/paging to the data returned by this subroutine, so the
-subroutine can choose to pass the complete table data anyway.
 
 _
         }],
