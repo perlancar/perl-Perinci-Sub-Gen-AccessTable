@@ -1,5 +1,15 @@
 Revision history for Sub-Spec-Gen-ReadTable
 
+0.04     2011-10-19
+
+         [INCOMPATIBLE CHANGES, ENHANCEMENTS]
+
+         'table_data' function is now expected to return {data=>DATA, ...}
+         instead of just DATA. This is to allow function to return data that is
+         already filtered (by passing filtered=>1), and/or sorted (sorted=>1),
+         and/or paged (paged=>1) for efficiency.
+
+
 0.03     2011-08-31
 
          No functional changes. Updated because _parse_schema() is moved from
