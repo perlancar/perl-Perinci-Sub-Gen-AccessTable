@@ -900,6 +900,12 @@ Now you can do:
 
 =head1 DESCRIPTION
 
+B<NOTICE>: This module and the L<Sub::Spec> standard is deprecated as of Jan
+2012. L<Rinci> is the new specification to replace Sub::Spec, it is about 95%
+compatible with Sub::Spec, but corrects a few issues and is more generic.
+C<Perinci::*> is the Perl implementation for Rinci and many of its modules can
+handle existing Sub::Spec sub specs.
+
 This module is useful when you want to expose a table data (an array of
 hashrefs, an array of arrays, or external data like a SQL table) as an API
 function. This module will generate a function that accepts arguments for
