@@ -1,5 +1,4 @@
-package Sub::Spec::Gen::ReadTable;
-# ABSTRACT: Generate function (and its spec) to read table data
+package Perinci::Sub::Gen::AcccessTable;
 
 use 5.010;
 use strict;
@@ -12,6 +11,8 @@ use Data::Sah;
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
+
+# VERSION
 
 our %SPEC;
 
@@ -810,7 +811,7 @@ sub gen_read_table_func {
 }
 
 1;
-__END__
+# ABSTRACT: Generate function (and its spec) to access table data
 
 =head1 SYNOPSIS
 
