@@ -925,6 +925,11 @@ This module's functions has L<Sub::Spec> specs.
 None are exported by default, but they are exportable.
 
 
+=head1 CAVEATS
+
+It is often not a good idea to expose your database schema directly as API.
+
+
 =head1 FAQ
 
 
