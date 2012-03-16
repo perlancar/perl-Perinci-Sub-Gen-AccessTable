@@ -30,7 +30,7 @@ sub _is_aoh {
     ref($data) eq 'ARRAY' && (!@$data || ref($data->[0]) eq 'HASH');
 }
 
-sub _gen_spec {
+sub _gen_meta {
     my ($table_spec, $opts) = @_;
 
     # XXX schema
@@ -49,8 +49,9 @@ sub _gen_spec {
         summary => "",
         description => "",
         args => {
-            show_field_names => ['bool' => {
-                arg_category => 'field selection',
+            show_field_names => {
+                schema => 'bool',
+                tags => ['field selection'],
                 summary => 'Show field names in result (as hash/assoc)',
                 description => <<'_',
 
@@ -59,8 +60,9 @@ on, will return an array of field names and values (hash/associative array).
 
 _
                 default => $opts->{default_show_field_names},
-            }],
-            detail => ['bool' => {
+            },
+            detail => {
+                schema => 'bool',
                 arg_category => 'field selection',
                 summary => 'Return detailed data (all fields)',
                 default => $opts->{default_detail} // 0,

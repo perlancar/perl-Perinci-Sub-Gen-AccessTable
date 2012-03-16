@@ -7,8 +7,8 @@ use strict;
 use warnings;
 use Lingua::EN::Numbers       qw();
 use Lingua::ID::Nums2Words    qw();
-use Sub::Spec::CmdLine        qw(run);
-use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
+use Perinci::CmdLine;
+use Perinci::Sub::Gen::ReadTable qw(gen_read_table_func);
 
 our %SPEC;
 
@@ -37,21 +37,24 @@ my $res = gen_read_table_func(
     table_spec => {
         summary => 'Numbers with their English and Indonesian spelling',
         columns => {
-            i => ['int*' => {
+            i => {
+                schema => 'int*',
                 summary => 'Integer number',
-                column_index => 0,
-                column_sortable => 1,
-            }],
-            str_en => ['str*' => {
+                index => 0,
+                sortable => 1,
+            },
+            str_en => {
+                schema => 'str*',
                 summary => 'English spelling',
-                column_index => 1,
-                column_sortable => 1,
-            }],
-            str_id => ['str*' => {
+                index => 1,
+                sortable => 1,
+            },
+            str_id => {
+                schema => 'str*',
                 summary => 'Indonesian spelling',
-                column_index => 2,
-                column_sortable => 1,
-            }],
+                index => 2,
+                sortable => 1,
+            },
         },
         pk => 'i',
     },
@@ -60,6 +63,6 @@ die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
 no warnings;
 *num_and_words = $res->[2]{code};
 use warnings;
-$SPEC{num_and_words} = $res->[2]{spec};
+$SPEC{num_and_words} = $res->[2]{meta};
 
-run(load=>0, module=>'main', sub=>'num_and_words');
+Perinci::CmdLine->new(url=>'/main/num_and_words')->run;

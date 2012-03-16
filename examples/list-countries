@@ -3,8 +3,8 @@
 use 5.010;
 use strict;
 use warnings;
-use Sub::Spec::CmdLine        qw(run);
-use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
+use Perinci::CmdLine;
+use Perinci::Sub::Gen::AccessTable qw(gen_read_table_func);
 
 our %SPEC;
 
@@ -20,31 +20,36 @@ my $res = gen_read_table_func(
     table_spec => {
         summary => 'List of countries',
         columns => {
-            id => ['str*' => {
+            id => {
+                schema => 'str*',
                 summary => 'ISO 2-letter code for the country',
-                column_index => 0,
-                column_sortable => 1,
-            }],
-            en_name => ['str*' => {
+                index => 0,
+                sortable => 1,
+            },
+            en_name => {
+                schema => 'str*',
                 summary => 'English name',
-                column_index => 1,
-                column_sortable => 1,
-            }],
-            id_name => ['str*' => {
+                index => 1,
+                sortable => 1,
+            },
+            id_name => {
+                schema => 'str*',
                 summary => 'Indonesian name',
-                column_index => 2,
-                column_sortable => 1,
-            }],
-            tags => ['array*' => {
+                index => 2,
+                sortable => 1,
+            },
+            tags => {
+                schema => 'array*',
                 summary => 'Keywords/tags',
-                column_index => 3,
-                column_sortable => 0,
-             }],
-            population => ['int*' => {
+                index => 3,
+                sortable => 0,
+            },
+            population => {
+                schema => 'int*',
                 summary => 'Population, in millions',
-                column_index => 4,
-                column_sortable => 1,
-             }],
+                index => 4,
+                sortable => 1,
+             },
         },
         pk => 'id',
     },
@@ -53,6 +58,6 @@ die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
 no warnings;
 *list_countries       = $res->[2]{code};
 use warnings;
-$SPEC{list_countries} = $res->[2]{spec};
+$SPEC{list_countries} = $res->[2]{meta};
 
-run(load=>0, module=>'main', sub=>'list_countries');
+Perinci::CmdLine->new(url=>'/main/list_countries')->run;
