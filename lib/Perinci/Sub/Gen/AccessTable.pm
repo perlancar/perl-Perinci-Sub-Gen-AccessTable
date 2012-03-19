@@ -1,80 +1,108 @@
 package Perinci::Sub::Gen::AcccessTable;
 
 use 5.010;
-use strict;
-use warnings;
 use Log::Any '$log';
+use Moo; # we go OO just for the I18N, we don't store attributes, etc
 
-use List::Util qw(shuffle);
 use Data::Sah;
+use List::Util qw(shuffle);
 
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
+with 'SHARYANTO::Role::I18NMany';
+
 # VERSION
 
 our %SPEC;
 
-sub _parse_schema {
+sub __parse_schema {
     Data::Sah::normalize_schema($_[0]);
 }
 
-sub _is_aoa {
+sub __is_aoa {
     my $data = shift;
     ref($data) eq 'ARRAY' && (!@$data || ref($data->[0]) eq 'ARRAY');
 }
 
-sub _is_aoh {
+sub __is_aoh {
     my $data = shift;
     ref($data) eq 'ARRAY' && (!@$data || ref($data->[0]) eq 'HASH');
 }
 
-sub _gen_meta {
-    my ($table_spec, $opts) = @_;
+sub _add_arg {
+    my ($self, $func_meta, $arg_name, $langs, $arg_spec) = @_;
 
-    # XXX schema
-    $table_spec->{columns} or
-        return [400, "Invalid table_spec: columns not specified"];
-    ref($table_spec->{columns}) eq 'HASH' or
-        return [400, "Invalid table_spec: columns must be hash"];
-    $table_spec->{pk} or
-        return [400, "Invalid table_spec: pk not specified"];
-    exists($table_spec->{columns}{ $table_spec->{pk} }) or
-        return [400, "Invalid table_spec: pk not in columns"];
+    die "BUG: Duplicate arg $arg_name" if $func_meta->{args}{$arg_name};
+
+    for my $prop (qw/summary description/) {
+        if ($arg_spec->{$prop}) {
+            for my $lang (@$langs) {
+                next if $lang eq 'en_US';
+                $arg_spec->{"$prop.alt.lang.$lang"} = $self->locl($
+            }
+        }
+    }
+                 # translate summary
+    # tanslate description
+    # create tag cat:LANG:xxx for each cat:xxx
+
+    $func_meta->{args}{$arg_name} = $arg_spec;
+
+}
+
+sub _gen_meta {
+    my ($self, $table_spec, $opts) = @_;
+    my $langs = $opts->{langs};
 
     # add general arguments
 
-    my $func_spec = {
-        summary => "",
-        description => "",
-        args => {
-            show_field_names => {
-                schema => 'bool',
-                tags => ['field selection'],
-                summary => 'Show field names in result (as hash/assoc)',
-                description => <<'_',
+    my $func_meta = {
+        v => 1.1,
+        summary => "REPLACE ME",
+        description => "REPLACE ME",
+        args => {},
+    };
+    my $fargs = $func_meta->{args};
+
+    $self->_add_arg(
+        $func_meta, 'show_field_names', $langs, {
+            schema => ['bool' => {
+                default => $opts->{default_show_field_names},
+            }],
+            tags => ['cat:field selection'],
+            summary => 'Show field names in result (as hash/associative array)',
+            description => <<'_',
 
 When off, will return an array of values without field names (array/list). When
 on, will return an array of field names and values (hash/associative array).
 
 _
-                default => $opts->{default_show_field_names},
-            },
+        });
+    $fargs->{detail} = $self->_localize_arg_specs(
+        $langs, {
+
             detail => {
-                schema => 'bool',
-                arg_category => 'field selection',
+                schema => ['bool' => {
+                    default => $opts->{default_detail} // 0,
+                }],
+                tags => ['field selection'],
                 summary => 'Return detailed data (all fields)',
-                default => $opts->{default_detail} // 0,
-            }],
-            fields => ['array' => {
-                of => 'str*',
-                arg_category => 'field selection',
+            },
+            fields => {
+                schema => ['array' => {
+                    of => 'str*',
+                    default => $opts->{default_fields},
+                }],
+                tags => ['field selection'],
                 summary => 'Select fields to return',
-                default => $opts->{default_fields},
-            }],
-            sort => ['str' => {
-                arg_category => 'order',
+            },
+            sort => {
+                schema => ['str' => {
+                    default => $opts->{default_sort},
+                }],
+                tags => ['order'],
                 summary => 'Order data according to certain fields',
                 description => <<'_',
 
@@ -82,128 +110,141 @@ A list of field names separated by comma. Each field can be prefixed with '-' to
 specify descending order instead of the default ascending.
 
 _
-                default => $opts->{default_sort},
-            }],
-            random => ['bool' => {
-                arg_category => 'order',
+            },
+            random => {
+                schema => ['bool' => {
+                    default => $opts->{default_random} // 0,
+                }],
+                tags => ['order'],
                 summary => 'If on, return result in random order',
-                default => $opts->{default_random} // 0,
-            }],
-            result_limit => ['int' => {
-                arg_category => 'paging',
+            },
+            result_limit => {
+                schema => ['int' => {
+                    default => $opts->{default_result_limit},
+                }],
+                tags => ['paging'],
                 summary => 'Only return a certain number of results',
-                default => $opts->{default_result_limit},
-            }],
-            result_start => ['int' => {
-                arg_category => 'paging',
+            },
+            result_start => {
+                schema => ['int' => {
+                    default => 1,
+                }],
+                tags => ['paging'],
                 summary => 'Only return results from a certain position',
-                default => 1,
-            }],
+            },
         },
     };
+    my $fargs = $func_meta->{args};
 
     # add search argument
     if ($opts->{enable_search} // 1) {
-        $func_spec->{args}{q} = ['str' => {
-            arg_category => 'filter',
+        $fargs->{q} = {
+            schema => ['str' => {
+            }],
+            tags => ['filter'],
             summary => 'Search',
-        }];
+        };
     }
 
     # add filter arguments for each table column
 
-    my $col_specs = {};
-    my $col2arg = {};
     for my $cname (keys %{$table_spec->{columns}}) {
-        my $cspec = _parse_schema($table_spec->{columns}{$cname});
-        $col_specs->{$cname} = $cspec;
-        my $a = $cname;
-        if (exists $func_spec->{args}{$a}) {
-            $a = "${a}_field";
-            if (exists $func_spec->{args}{$a}) {
-                return [400, "Clash of column name with arg name: $a"];
-            }
+        my $cspec   = $table_spec->{columns}{$cname};
+        my $cschema = _parse_schema($cspec->{schema});
+        my $ctype   = $cschema->[0];
+
+        next if defined($cspec->{filterable}) && !$cspec->{filterable};
+
+        $fargs->{"$cname.is"} = {
+            schema => ['$ctype*' => {
+            }],
+            tags => ["filter", "filter for $cname"],
+            summary => "Only return results having ".
+                "specified values in '$cname' field",
+        };
+        unless ($fargs->{$cname}) {
+            $fargs->{$cname} = $fargs->{"$cname.is"};
         }
-        $col2arg->{$cname} = $a;
-        my $cf = $cspec->{clause_sets}[0]{column_filterable};
-        next if defined($cf) && !$cf;
-        my $t = $cspec->{type};
-        if ($t eq 'bool') {
-            return [400, "Clash of $t filter argument: $a"]
-                if $func_spec->{args}{$a};
-            $func_spec->{args}{$a} = ['bool' => {
+
+        if ($ctype eq 'bool') {
+            return [400, "Clash of $ctype filter argument: $a"]
+                if $fargs->{$a};
+            $fargs->{$a} = ['bool' => {
                 summary => "Only return results having a true $a value",
                 arg_category => "filter for $cname",
                 default => 0,
             }];
         }
-        if ($t eq 'array') {
-            return [400, "Clash of $t filter argument: has_$a"]
-                if $func_spec->{args}{"has_$a"};
-            $func_spec->{args}{"has_$a"} = ['array' => {
-                of => 'str*',
-                arg_category => "filter for $cname",
+
+
+
+        if ($ctype eq 'array') {
+            $fargs->{"$a.has"} = {
+                schema => ['array' => {
+                    of => 'str*',
+                }],
+                tags => ["filter for $cname"],
                 summary => "Only return results having ".
-                    "specified values in $a",
-            }];
-            return [400, "Clash of $t filter argument: lacks_$a"]
-                if $func_spec->{args}{"lacks_$a"};
-            $func_spec->{args}{"lacks_$a"} = ['array' => {
-                of => 'str*',
-                arg_category => "filter for $cname",
+                    "specified values in '$a' field",
+            };
+            $fargs->{"$a.lacks"} = {
+                schema => ['array' => {
+                    of => 'str*',
+                }],
+                tags => ["filter for $cname"],
                 summary => "Only return results not having ".
-                    "specified values in $a",
-            }];
+                    "specified values in '$a' field",
+            };
         }
-        if ($t =~ /(?:int|float|str)/) {
-            return [400, "Clash of $t filter argument: $a"]
-                if $func_spec->{args}{$a};
-            $func_spec->{args}{$a} = [$t => {
+        if ($ctype =~ /(?:int|float|str)/) {
+            return [400, "Clash of $ctype filter argument: $a"]
+                if $fargs->{$a};
+            $fargs->{$a} = [$ctype => {
                 summary => "Only return results having certain value of $a",
                 arg_category => "filter for $cname",
             }];
-            return [400, "Clash of $t filter argument: min_$a"]
-                if $func_spec->{args}{"min_$a"};
-            $func_spec->{args}{"min_$a"} = [$t => {
+            return [400, "Clash of $ctype filter argument: min_$a"]
+                if $fargs->{"min_$a"};
+            $fargs->{"min_$a"} = [$ctype => {
                 summary => "Only return results having ".
                     "a certain minimum value of $a",
                 arg_category => "filter for $cname",
             }];
-            return [400, "Clash of $t filter argument: max_$a"]
-                if $func_spec->{args}{"max_$a"};
-            $func_spec->{args}{"max_$a"} = [$t => {
+            return [400, "Clash of $ctype filter argument: max_$a"]
+                if $fargs->{"max_$a"};
+            $fargs->{"max_$a"} = [$ctype => {
                 summary => "Only return results having ".
                     "a certain maximum value of $a",
                 arg_category => "filter for $cname",
             }];
         }
-        if ($t eq 'str') {
-            return [400, "Clash of $t filter argument: ${a}_contain"]
-                if $func_spec->{args}{"${a}_contain"};
-            $func_spec->{args}{"${a}_contain"} = [$t => {
+        if ($ctype eq 'str') {
+            return [400, "Clash of $ctype filter argument: ${a}_contain"]
+                if $fargs->{"${a}_contain"};
+            $fargs->{"${a}_contain"} = [$ctype => {
                 summary => "Only return results with $a containing ".
                     "certain text",
                 arg_category => "filter for $cname",
             }];
-            return [400, "Clash of $t filter argument: ${a}_not_contain"]
-                if $func_spec->{args}{"${a}_not_contain"};
-            $func_spec->{args}{"${a}_not_contain"} = [$t => {
+            return [400, "Clash of $ctype filter argument: ${a}_not_contain"]
+                if $fargs->{"${a}_not_contain"};
+            $fargs->{"${a}_not_contain"} = [$ctype => {
                 summary => "Only return results with $a not containing ".
                     "certain text",
                 arg_category => "filter for $cname",
             }];
             my $cf = $cspec->{clause_sets}[0]{column_filterable_regex};
             unless (defined($cf) && !$cf) {
-                return [400, "Clash of $t filter argument: ${a}_match"]
-                    if $func_spec->{args}{"${a}_match"};
-                $func_spec->{args}{"${a}_match"} = [$t => {
+                return [400, "Clash of $ctype filter argument: ${a}_match"]
+                    if $fargs->{"${a}_match"};
+                $fargs->{"${a}_match"} = [$ctype => {
                     summary => "Only return results with $a matching ".
                         "specified regex",
                     arg_category => "filter for $cname",
                 }];
-                return [400, "Clash of $t filter argument: ${a}_not_match"]
-                    if $func_spec->{args}{"${a}_not_match"};
-                $func_spec->{args}{"${a}_not_match"} = [$t => {
+                return [400, "Clash of $ctype filter argument: ${a}_not_match"]
+                    if $fargs->{"${a}_not_match"};
+                $fargs->{"${a}_not_match"} = [$ctype => {
                     summary => "Only return results with $a matching ".
                         "specified regex",
                     arg_category => "filter for $cname",
@@ -212,16 +253,11 @@ _
         }
     }
 
-    # normalize arg specs
-    #while (my ($k, $v) = each %{$func_spec->{args}}) {
-    #    $func_spec->{args}{$k} = _parse_schema($v);
-    #}
-
-    [200, "OK", [$func_spec, $col_specs, $col2arg]];
+    [200, "OK", $func_meta];
 }
 
-sub _parse_query {
-    my ($args, $opts, $table_spec, $col_specs, $col2arg) = @_;
+sub __parse_query {
+    my ($args, $opts, $table_spec) = @_;
     my $query = {args=>$args};
 
     my @columns = keys %$col_specs;
@@ -244,32 +280,29 @@ sub _parse_query {
     my @filter_fields;
     my @filters;
     for my $c (grep {$col_specs->{$_}{type} eq 'bool'} @columns) {
-        my $a = $col2arg->{$c};
         my $exists;
-        if (defined $args->{$a}) {
+        if (defined $args->{"$c.is"}) {
             $exists++;
-            push @filters, [$a, $c, "truth", $args->{$a}];
+            push @filters, [$c, "truth", $args->{$c}];
         }
         push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
     for my $c (grep {$col_specs->{$_}{type} eq 'array'} @columns) {
-        my $a = $col2arg->{$c};
         my $exists;
-        if (defined $args->{"has_$a"}) {
+        if (defined $args->{"$c.has"}) {
             $exists++;
-            push @filters, ["has_$a", $c, "~~", $args->{"has_$a"}];
+            push @filters, ["$c.has", $c, "~~", $args->{"$c.has"}];
         }
-        if (defined $args->{"lacks_$a"}) {
+        if (defined $args->{"$c.lacks"}) {
             $exists++;
-            push @filters, ["lacks_$a", $c, "!~~", $args->{"lacks_$a"}];
+            push @filters, ["$c.lacks", $c, "!~~", $args->{"$c.lacks"}];
         }
         push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
     for my $c (grep {$col_specs->{$_}{type} =~ /^(int|float|str)$/}
                    @columns) {
-        my $t = $col_specs->{$c}{type};
         my $exists;
-        my $a = $col2arg->{$c};
+        my $a = $c;
         if (defined $args->{$a}) {
             $exists++;
             push @filters, [$a, $c, $t eq 'str' ? "eq" : "==", $args->{$a}];
@@ -287,7 +320,7 @@ sub _parse_query {
         push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
     }
     for my $c (grep {$col_specs->{$_}{type} =~ /^str$/} @columns) {
-        my $a = $col2arg->{$c};
+        my $a = $c;
         my $exists;
         if (defined $args->{"${a}_contain"}) {
             $exists++;
@@ -313,8 +346,7 @@ sub _parse_query {
     $query->{filter_fields} = \@filter_fields;
 
     my @searchable_fields = grep {
-        !defined($col_specs->{$_}{clause_sets}[0]{column_searchable}) ||
-            $col_specs->{$_}{clause_sets}[0]{column_searchable}
+        !defined($cspec->{searchable}) || $cspec->{searchable}
         } @columns;
     my $search_opts = {ci => $opts->{case_insensitive_search}};
     my $search_re;
@@ -333,10 +365,10 @@ sub _parse_query {
     unless ($opts->{custom_search}) {
         $query->{search_fields} = \@searchable_fields;
         $query->{search_str_fields} = [grep {
-            $col_specs->{$_}{type} =~ /^(str)$/
+            $ctype =~ /^(str)$/
         } @searchable_fields];
         $query->{search_array_fields} = [grep {
-            $col_specs->{$_}{type} =~ /^(array)$/
+            $ctype =~ /^(array)$/
         } @searchable_fields];
         $query->{search_re} = $search_re;
     }
@@ -349,10 +381,8 @@ sub _parse_query {
             my $desc = $f =~ s/^-//;
             return [400, "Unknown field in sort: $f"]
                 unless $f ~~ @columns;
-            my $cs = $col_specs->{$f}{clause_sets}[0]{column_sortable};
             return [400, "Field $f is not sortable"]
-                unless !defined($cs) || $cs;
-            my $t = $col_specs->{$f}{type};
+                unless !defined($cspec->{sortable}) || $cspec->{sortable};
             my $op = $t =~ /^(int|float)$/ ? '<=>' : 'cmp';
             #print "t=$t, op=$op\n";
             push @sorts, [$f, $op, $desc ? -1:1];
@@ -376,7 +406,7 @@ sub _parse_query {
 }
 
 sub _gen_func {
-    my ($opts, $table_data, $func_spec, $table_spec, $col_specs, $col2arg) = @_;
+    my ($self, $table_spec, $opts, $table_data, $func_meta) = @_;
 
     my $func = sub {
         my %args = @_;
@@ -407,7 +437,7 @@ sub _gen_func {
         # retrieve data
         my $data;
         my $metadata = {};
-        if (_is_aoa($table_data) || _is_aoh($table_data)) {
+        if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
         } elsif (ref($table_data) eq 'CODE') {
             my $res;
@@ -419,7 +449,7 @@ sub _gen_func {
             $data = $res->{data};
             return [500, "BUG: 'data' key from result is not AoA/AoH".
                         ", please report to administrator"]
-                unless _is_aoa($data) || _is_aoh($data);
+                unless __is_aoa($data) || __is_aoh($data);
             for (qw/filtered sorted paged columns_selected/) {
                 $metadata->{$_} = $res->{$_};
             }
@@ -582,12 +612,11 @@ sub _gen_func {
         [200, "OK", \@rows];
     };
 
-    [200, "OK", [$func]];
+    [200, "OK", $func];
 }
 
 $SPEC{gen_read_table_func} = {
     summary => 'Generate function (and its spec) to read table data',
-    description_fmt => 'org',
     description => <<'_',
 
 The generated function acts like a simple single table SQL SELECT query,
@@ -598,192 +627,268 @@ API function.
 The generated spec is pretty barebones currently. You can decorate with summary
 and description afterwards.
 
-* Resulting function
-
 The resulting function will accept these arguments. The naming of arguments are
 designed to be less Perl-/database-centric.
 
-** *show_field_names* => BOOL (default 1)
+* *show_field_names* => BOOL (default 1)
 
-By default function will return AoH. If this argument is set to 0, then function
-will return AoA instead.
+  By default function will return AoH. If this argument is set to 0, then
+  function will return AoA instead.
 
-** *detail* => BOOL (default 0)
+* *detail* => BOOL (default 0)
 
-This is a field selection option. By default, function will return PK column
-only. If this argument is set to true, then all columns will be returned.
+  This is a field selection option. By default, function will return PK column
+  only. If this argument is set to true, then all columns will be returned.
 
-** *fields* => ARRAY
+* *fields* => ARRAY
 
-This is a field selection option. If you only want certain fields, specify them
-here.
+  This is a field selection option. If you only want certain fields, specify
+  them here.
 
-** *result_limit* => INT (default undef)
-** *result_start* => INT (default 1)
+* *result_limit* => INT (default undef)
 
-The result_limit and result_start arguments are paging options, they work like
-LIMIT clause in SQL, except that index starts at 1 and not 0.
+* *result_start* => INT (default 1)
 
-** *random* => BOOL (default 0)
+  The *result_limit* and *result_start* arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0.
 
-The random argument is an ordering option. If set to true, order of rows
-returned will be shuffled first. This happened before paging.
+* *random* => BOOL (default 0)
 
-** *sort* => STR
+  The random argument is an ordering option. If set to true, order of rows
+  returned will be shuffled first. This happened before paging.
 
-The sort argument is an ordering option, containing name of field. A - prefix
-signifies descending instead of ascending order. Multiple fields are allowed,
-separated by comma.
+* *sort* => STR
 
-** *q* => STR
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
 
-A filtering option. By default, all fields except those specified with
-column_searchable=0 will be searched using simple case-insensitive string
-search. There are a few options to customize this, using these gen arguments:
-*word_search*, *case_insensitive_search*, and *custom_search*.
+* *q* => STR
 
-** Filter arguments
+  A filtering option. By default, all fields except those specified with
+  column_searchable=0 will be searched using simple case-insensitive string
+  search. There are a few options to customize this, using these gen arguments:
+  *word_search*, *case_insensitive_search*, and *custom_search*.
 
-They will be generated for each column, except when column has
-'column_filterable' clause set to false.
+* Filter arguments
 
-Undef values will not match any filter, just like NULL in SQL.
+  They will be generated for each column, except when column has
+  'column_filterable' clause set to false.
 
-If a field name clashes with a general argument name (e.g. *q* or *sort*) then
-it will be suffixed with '_field' (e.g. *q_field* or *sort_field*).
+  Undef values will not match any filter, just like NULL in SQL.
 
-*** "FIELD" boolean argument for each boolean field
+  + *FIELD.is* boolean argument for each field. Only records with field matching
+     value exactly ('==') will be included. If doesn't clash with other function
+     arguments, *FIELD* will also be added for this.
 
-*** "has_FIELD" and "lacks_FIELD" array arguments for each set field
+  + *FIELD.not* boolean argument for each field. Only records with field not
+    maching value ('!=') will be included.
 
-*** "min_FIELD"/"max_FIELD"/"FIELD" arguments for each int/float/str
+  + *FIELD.has* and *FIELD.lacks* array arguments for each set field. Only
+    records with field having or lacking certain value will be included.
 
-*** "FIELD_contain" string argument for each str field
+  + *FIELD.min* and *FIELD.max* for each int/float/str field. Only records with
+    field greater/equal than, or less/equal than a certain value will be
+    included.
 
-*** "FIELD_match" and "FIELD_not_match" regex argument for each str field
+  + *FIELD.contains* for each str field. Only records with field containing
+    certain value (substring) will be included.
 
-Will not be generated if column_filterable_regex clause in column specification
-is set to 0.
+  + *FIELD.matches* and *FIELD.not_matches* for each str field. Only records
+    with field matching certain value (regex) will be included. Function will
+    return 400 if regex is invalid. These arguments will not be generated if
+    'filterable_regex' clause in column specification is set to 0.
 
-*** "FIELD_starts_with" string argument for each str field (not implemented)
+  + *FIELD.starts_with* for each str field (not yet implemented)
 
-*** "FIELD_ends_with" string argument for each str field (not implemented)
+  + *FIELD.ends_with* for each str field (not yet implemented)
 
 _
     args => {
-        table_data => ['any*' => {
+        table_data => {
+            req => 1,
+            schema => 'any*',
             summary => 'Data',
-            description_fmt => 'org',
             description => <<'_',
 
 Table data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
 below).
 
-Passing a subroutine lets you fetch data dynamically. The subroutine will be
-called with these arguments ($query) and is expected to return a hashref like
-this {data => DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL,
-columns_selected=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is
-assumed to be already paged and won't be paged again; likewise for filtered and
-sorted.
+Passing a subroutine lets you fetch data dynamically and from arbitrary source
+(e.g. DBI table or other external sources). The subroutine will be called with
+these arguments ('$query') and is expected to return a hashref like this {data
+=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, columns_selected=>BOOL,
+randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is assumed to
+be already paged and won't be paged again; likewise for filtered, sorted, and
+column_selected. These are useful for example with DBI result, where requested
+data is already filtered/sorted/column selected/paged/randomized via appropriate
+SQL query. This way, the generated function will not attempt to duplicate the
+efforts.
 
-$query is a hashref which contains information about the query, e.g. 'args'
+'$query' is a hashref which contains information about the query, e.g. 'args'
 (the original arguments passed to the generated function, e.g. {random=>1,
-result_limit=>1, field1_match=>'foo'}), 'mentioned_fields' which lists fields
+result_limit=>1, field1_match=>'f.+'}), 'mentioned_fields' which lists fields
 that are mentioned in either filtering arguments or fields or ordering,
 'requested_fields' (fields mentioned in list of fields to be returned),
 'sort_fields' (fields mentioned in sort arguments), 'filter_fields' (fields
-mentioned in filter arguments), etc.
+mentioned in filter arguments).
 
 _
-        }],
-        table_spec => ['hash*' => {
+        },
+        table_spec => {
+            req => 1,
+            schema => 'hash*',
             summary => 'Table specification',
-            description_fmt => 'org',
             description => <<'_',
 
-A hashref with these required keys: columns, pk. Columns is a hashref of column
-specification with column name as keys, while table_pk specifies which column is
-to be designated as the primary key. Currently only single-column PK is allowed.
+A hashref with these required keys: 'columns', 'pk'. 'Columns' is a hashref of
+column specification with column name as keys, while 'pk' specifies which column
+is to be designated as the primary key. Currently only single-column PK is
+allowed.
 
-* Column specification
-
-A Sah schema with these required clauses: column_index (an integer starting from
-0 that specifies position of column in the data, especially required with AoA
-data) and these optional clauses: column_sortable (a boolean stating whether
-column can be sorted, default is true), column_filterable (a boolean stating
-whether column can be mentioned in filter options).
+Column specification. A hashref with these required keys: 'schema' (a Sah
+schema), 'index' (an integer starting from 0 that specifies position of column
+in the data, especially required with AoA data) and these optional clauses:
+'sortable' (a boolean stating whether column can be sorted, default is true),
+'filterable' (a boolean stating whether column can be mentioned in filter
+options, default is true).
 
 _
-        }],
-        default_detail => ['bool' => {
-            summary => "Supply default 'detail' value for function spec",
-        }],
-        default_fields => ['str' => {
-            summary => "Supply default 'fields' value for function spec",
-        }],
+        },
+        langs => {
+            schema => [array => {of=>'str*', default=>['en_US']}],
+            summary => 'Choose language for function metadata',
+            description => <<'_',
+
+This function can generate metadata containing text from one or more languages.
+For example if you set 'langs' to ['en_US', 'id_ID'] then the generated function
+metadata might look something like this:
+
+    {
+        v => 1.1,
+        args => {
+            random => {
+                summary => 'Random order of results', # English
+                "summary.alt.lang.id_ID" => "Acak urutan hasil", # Indonesian
+                ...
+            },
+            ...
+        },
+        ...
+    }
+
+_
+        },
+        default_detail => {
+            schema => 'bool',
+            summary => "Supply default 'detail' value for function arg spec",
+        },
+        default_fields => {
+            schema => 'str',
+            summary => "Supply default 'fields' value for function arg spec",
+        },
         # not yet documented
-        #default_filters => ['array' => {
-        #    of => 'array*', # XXX filter structure
+        #default_filters => {
+        #    schema => ['array' => {
+        #        of => 'array*', # XXX filter structure
+        #    }],
         #    summary => "Supply default filters",
-        #}],
-        default_show_field_names => ['bool' => {
+        #},
+        default_show_field_names => {
+            schema => 'bool',
             summary => "Supply default 'show_field_names' ".
-                "value for function spec",
-        }],
-        default_sort => ['str' => {
-            summary => "Supply default 'sort' value for function spec",
-        }],
-        default_random => ['bool' => {
-            summary => "Supply default 'random' value for function spec",
-        }],
-        default_result_limit => ['int' => {
-            summary => "Supply default 'result_limit' value for function spec",
-        }],
-        enable_search => ['bool' => {
-            summary => "Generated function will support searching (argument q)",
-            default => 1,
-        }],
-        word_search => ['bool' => {
-            summary => "Generated function will perform word searching ".
-                "instead of string searching",
+                "value for function arg spec",
+        },
+        default_sort => {
+            schema => 'str',
+            summary => "Supply default 'sort' value for function arg spec",
+        },
+        default_random => {
+            schema => 'bool',
+            summary => "Supply default 'random' value for function arg spec",
+        },
+        default_result_limit => {
+            schema => 'int',
+            summary => "Supply default 'result_limit' value for function arg ".
+                "spec",
+        },
+        enable_search => {
+            schema => ['bool' => {
+                default => 1,
+            }],
+            summary => "Decide whether generated function will support ".
+                "searching (argument q)",
+        },
+        word_search => {
+            schema => ['bool' => {
+                default => 0,
+            }],
+            summary => "Decide whether generated function will perform ".
+                "word searching instead of string searching",
             description => <<'_',
 
 For example, if search term is 'pine' and column value is 'green pineapple',
 search will match if word_search=false, but won't match under word_search.
 
 _
-            default => 0,
-        }],
-        case_insensitive_search => ['bool' => {
-            summary => 'Generated function will perform case-insensitive search',
-            default => 1,
-        }],
-        custom_search => ['code' => {
+        },
+        case_insensitive_search => {
+            schema => ['bool' => {
+                default => 1,
+            }],
+            summary => 'Decide whether generated function will perform '.
+                'case-insensitive search',
+        },
+        custom_search => {
+            schema => 'code',
             summary => 'Supply custom searching for generated function',
             description => <<'_',
 
-Code will be supplied ($row, $q, $opts) where $q is the search term (the
-argument q) and $row the hashref row value. $opts is {ci=>0|1}. Code should
-return true if row matches search term.
+Code will be supplied ($row, $q, $opts) where $q is the search term (from the
+function argument 'q') and $row the hashref row value. $opts is {ci=>0|1}. Code
+should return true if row matches search term.
 
 _
-        }],
+        },
     },
 };
 sub gen_read_table_func {
     my %args = @_;
 
+    my $self = __PACKAGE__->new;
+    $self->_gen_read_table_func(%args);
+}
+
+sub _gen_read_table_func {
+    my ($self, %args) = @_;
+
     # XXX schema
     my $table_data = $args{table_data}
         or return [400, "Please specify table_data"];
-    _is_aoa($table_data) or _is_aoh($table_data) or ref($table_data) eq 'CODE'
+    __is_aoa($table_data) or __is_aoh($table_data) or ref($table_data) eq 'CODE'
         or return [400, "Invalid table_data: must be AoA or AoH or function"];
     my $table_spec = $args{table_spec}
         or return [400, "Please specify table_spec"];
     ref($table_spec) eq 'HASH'
         or return [400, "Invalid table_spec: must be a hash"];
+    $table_spec->{columns} or
+        return [400, "Invalid table_spec: columns not specified"];
+    ref($table_spec->{columns}) eq 'HASH' or
+        return [400, "Invalid table_spec: columns must be hash"];
+    $table_spec->{pk} or
+        return [400, "Invalid table_spec: pk not specified"];
+    exists($table_spec->{columns}{ $table_spec->{pk} }) or
+        return [400, "Invalid table_spec: pk not in columns"];
+
+    # duplicate and make each column's schema normalized
+    $table_spec = clone($table_spec);
+    for my $c (values %{$table_spec->{columns}}) {
+        $c->{schema} //= 'any';
+        $c->{schema} = __parse_schema($c->{schema});
+    }
 
     my $opts = {
+        langs                    => $args{langs} // ['en_US'],
         default_detail           => $args{default_detail},
         default_show_field_names => $args{default_show_field_names},
         default_fields           => $args{default_fields},
@@ -798,22 +903,21 @@ sub gen_read_table_func {
     };
 
     my $res;
-    $res = _gen_spec($table_spec, $opts);
-    return [$res->[0], "Can't generate spec: $res->[1]"]
+    $res = $self->_gen_meta($table_spec, $opts);
+    return [$res->[0], "Can't generate meta: $res->[1]"]
         unless $res->[0] == 200;
-    my ($func_spec, $col_specs, $col2arg) = @{$res->[2]};
+    my $func_meta = $res->[2];
 
-    $res = _gen_func(
-        $opts, $table_data, $func_spec, $table_spec, $col_specs, $col2arg);
+    $res = $self->_gen_func($table_spec, $opts, $table_data, $func_meta);
     return [$res->[0], "Can't generate func: $res->[1]"]
         unless $res->[0] == 200;
-    my ($func) = @{$res->[2]};
+    my $func = $res->[2];
 
-    [200, "OK", {spec=>$func_spec, code=>$func}];
+    [200, "OK", {meta=>$func_meta, code=>$func}];
 }
 
 1;
-# ABSTRACT: Generate function (and its spec) to access table data
+# ABSTRACT: Generate function (and its Rinci metadata) to access table data
 
 =head1 SYNOPSIS
 
@@ -822,8 +926,8 @@ In list_countries.pl:
  #!perl
  use strict;
  use warnings;
- use Sub::Spec::CmdLine        qw(run);
- use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
+ use Perinci::CmdLine;
+ use Perinci::Sub::Gen::AccessTable qw(gen_read_table_func);
 
  our %SPEC;
 
@@ -839,35 +943,39 @@ In list_countries.pl:
      table_spec => {
          summary => 'List of countries',
          columns => {
-             id => ['str*' => {
+             id => {
+                 schema => 'str*',
                  summary => 'ISO 2-letter code for the country',
-                 column_index => 0,
-                 column_sortable => 1,
-             }],
-             en_name => ['str*' => {
+                 index => 0,
+                 sortable => 1,
+             },
+             en_name => {
+                 schema => 'str*',
                  summary => 'English name',
-                 column_index => 1,
-                 column_sortable => 1,
-             }],
-             id_name => ['str*' => {
+                 index => 1,
+                 sortable => 1,
+             },
+             id_name => {
+                 schema => 'str*',
                  summary => 'Indonesian name',
-                 column_index => 2,
-                 column_sortable => 1,
-             }],
-             tags => ['array*' => {
+                 index => 2,
+                 sortable => 1,
+             },
+             tags => {
+                 schema => 'array*',
                  summary => 'Keywords/tags',
-                 column_index => 3,
-                 column_sortable => 0,
-             }],
+                 index => 3,
+                 sortable => 0,
+             },
          },
          pk => 'id',
      },
  );
  die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
  *list_countries       = $res->[2]{code};
- $SPEC{list_countries} = $res->[2]{spec};
+ $SPEC{list_countries} = $res->[2]{meta};
 
- run(load=>0, module=>'main', sub=>'list_countries');
+ Perinci::CmdLine->new(url=>'/main/list_countries')->run;
 
 Now you can do:
 
@@ -903,28 +1011,16 @@ Now you can do:
 
 =head1 DESCRIPTION
 
-B<NOTICE>: This module and the L<Sub::Spec> standard is deprecated as of Jan
-2012. L<Rinci> is the new specification to replace Sub::Spec, it is about 95%
-compatible with Sub::Spec, but corrects a few issues and is more generic.
-C<Perinci::*> is the Perl implementation for Rinci and many of its modules can
-handle existing Sub::Spec sub specs.
-
 This module is useful when you want to expose a table data (an array of
 hashrefs, an array of arrays, or external data like a SQL table) as an API
 function. This module will generate a function that accepts arguments for
-specifying fields, filtering, sorting, and paging; along with its L<Sub::Spec>
-spec. The resulting function can then be run via command-line using
-L<Sub::Spec::CmdLine> (as demonstrated in Synopsis), or served via REST using
-L<Sub::Spec::HTTP::Server>, or consumed normally by Perl programs.
+specifying fields, filtering, sorting, and paging; along with its L<Rinci>
+metadata. The resulting function can then be run via command-line using
+L<Perinci::CmdLine> (as demonstrated in Synopsis), or served via HTTP using
+L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
 
-This module uses L<Log::Any> for logging framework.
-
-This module's functions has L<Sub::Spec> specs.
-
-
-=head1 FUNCTIONS
-
-None are exported by default, but they are exportable.
+Internally, the
+This module uses L<Log::Any> for logging.
 
 
 =head1 CAVEATS
@@ -937,8 +1033,8 @@ It is often not a good idea to expose your database schema directly as API.
 
 =head1 SEE ALSO
 
-L<Sub::Spec>
+L<Rinci>
 
-L<Sub::Spec::CmdLine>
+L<Perinci::CmdLine>
 
 =cut
