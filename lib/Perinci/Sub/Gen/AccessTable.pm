@@ -1,4 +1,4 @@
-package Perinci::Sub::Gen::AcccessTable;
+package Perinci::Sub::Gen::AccessTable;
 
 use 5.010;
 use Log::Any '$log';
@@ -6,6 +6,7 @@ use Moo; # we go OO just for the I18N, we don't store attributes, etc
 
 use Data::Sah;
 use List::Util qw(shuffle);
+use SHARYANTO::String::Util qw(trim_blank_lines);
 
 use Exporter;
 our @ISA = qw(Exporter);
@@ -37,19 +38,31 @@ sub _add_arg {
     die "BUG: Duplicate arg $arg_name" if $func_meta->{args}{$arg_name};
 
     for my $prop (qw/summary description/) {
+        $arg_spec->{$prop} = trim_blank_lines($arg_spec->{$prop});
         if ($arg_spec->{$prop}) {
             for my $lang (@$langs) {
                 next if $lang eq 'en_US';
-                $arg_spec->{"$prop.alt.lang.$lang"} = $self->locl($
+                $arg_spec->{"$prop.alt.lang.$lang"} = $self->locl(
+                    $lang, $arg_spec->{$prop});
             }
         }
     }
-                 # translate summary
-    # tanslate description
-    # create tag cat:LANG:xxx for each cat:xxx
 
+    # provides translation for category (cat:*) tags.
+    my $tags = $arg_spec->{tags};
+    if ($tags) {
+        for my $tag (@$tags) {
+            next unless $tag =~ /^cat:([^:]+)$/;
+            my $text = $1;
+            for my $lang (@$langs) {
+                next if $lang eq 'en_US';
+                my $k = "_translations.$lang";
+                $arg_spec->{$k} //= {};
+                $arg_spec->{$k}{$text} = $self->locl($lang, $text);
+            }
+        }
+    }
     $func_meta->{args}{$arg_name} = $arg_spec;
-
 }
 
 sub _gen_meta {
@@ -67,9 +80,9 @@ sub _gen_meta {
     my $fargs = $func_meta->{args};
 
     $self->_add_arg(
-        $func_meta, 'show_field_names', $langs, {
+        $func_meta, 'return_field_names', $langs, {
             schema => ['bool' => {
-                default => $opts->{default_show_field_names},
+                default => $opts->{default_return_field_names},
             }],
             tags => ['cat:field selection'],
             summary => 'Show field names in result (as hash/associative array)',
@@ -80,37 +93,45 @@ on, will return an array of field names and values (hash/associative array).
 
 _
         });
-    $fargs->{detail} = $self->_localize_arg_specs(
-        $langs, {
+    $self->_add_arg(
+        $func_meta, 'detail', $langs, {
+            schema => ['bool' => {
+                default => $opts->{default_detail} // 0,
+            }],
+            tags => ['cat:field selection'],
+            summary => 'Return detailed data (all fields)',
+            description => <<'_',
 
-            detail => {
-                schema => ['bool' => {
-                    default => $opts->{default_detail} // 0,
-                }],
-                tags => ['field selection'],
-                summary => 'Return detailed data (all fields)',
-            },
-            fields => {
-                schema => ['array' => {
-                    of => 'str*',
-                    default => $opts->{default_fields},
-                }],
-                tags => ['field selection'],
-                summary => 'Select fields to return',
-            },
-            sort => {
-                schema => ['str' => {
-                    default => $opts->{default_sort},
-                }],
-                tags => ['order'],
-                summary => 'Order data according to certain fields',
-                description => <<'_',
+By default, only the key (ID) field is returned.
+
+_
+        });
+    $self->_add_arg(
+        $func_meta, 'fields', $langs, {
+            schema => ['array' => {
+                of => 'str*',
+                default => $opts->{default_fields},
+            }],
+            tags => ['cat:field selection'],
+            summary => 'Select fields to return',
+        });
+    $self->_add_arg(
+        $func_meta, 'sort', $langs, {
+            schema => ['str' => {
+                default => $opts->{default_sort},
+            }],
+            tags => ['cat:ordering'],
+            summary => 'Order data according to certain field(s)',
+            description => <<'_',
 
 A list of field names separated by comma. Each field can be prefixed with '-' to
 specify descending order instead of the default ascending.
 
 _
-            },
+        });
+
+    if (0) {
+        my $dummy = {
             random => {
                 schema => ['bool' => {
                     default => $opts->{default_random} // 0,
@@ -133,8 +154,7 @@ _
                 summary => 'Only return results from a certain position',
             },
         },
-    };
-    my $fargs = $func_meta->{args};
+    }
 
     # add search argument
     if ($opts->{enable_search} // 1) {
@@ -146,11 +166,13 @@ _
         };
     }
 
+    return [200, "OK", $func_meta]; # TMP
+
     # add filter arguments for each table column
 
     for my $cname (keys %{$table_spec->{columns}}) {
         my $cspec   = $table_spec->{columns}{$cname};
-        my $cschema = _parse_schema($cspec->{schema});
+        my $cschema = __parse_schema($cspec->{schema});
         my $ctype   = $cschema->[0];
 
         next if defined($cspec->{filterable}) && !$cspec->{filterable};
@@ -256,167 +278,22 @@ _
     [200, "OK", $func_meta];
 }
 
-sub __parse_query {
-    my ($args, $opts, $table_spec) = @_;
-    my $query = {args=>$args};
-
-    my @columns = keys %$col_specs;
-    my @requested_fields;
-    if ($args->{detail}) {
-        @requested_fields = @columns;
-        $args->{show_field_names} //= 1;
-    } elsif ($args->{fields}) {
-        @requested_fields = @{ $args->{fields} };
-        $args->{show_field_names} //= 1;
-    } else {
-        @requested_fields = ($table_spec->{pk});
-        $args->{show_field_names} //= 0;
-    }
-    for (@requested_fields) {
-        return [400, "Unknown field $_"] unless $_ ~~ @columns;
-    }
-    $query->{requested_fields} = \@requested_fields;
-
-    my @filter_fields;
-    my @filters;
-    for my $c (grep {$col_specs->{$_}{type} eq 'bool'} @columns) {
-        my $exists;
-        if (defined $args->{"$c.is"}) {
-            $exists++;
-            push @filters, [$c, "truth", $args->{$c}];
-        }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
-    }
-    for my $c (grep {$col_specs->{$_}{type} eq 'array'} @columns) {
-        my $exists;
-        if (defined $args->{"$c.has"}) {
-            $exists++;
-            push @filters, ["$c.has", $c, "~~", $args->{"$c.has"}];
-        }
-        if (defined $args->{"$c.lacks"}) {
-            $exists++;
-            push @filters, ["$c.lacks", $c, "!~~", $args->{"$c.lacks"}];
-        }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
-    }
-    for my $c (grep {$col_specs->{$_}{type} =~ /^(int|float|str)$/}
-                   @columns) {
-        my $exists;
-        my $a = $c;
-        if (defined $args->{$a}) {
-            $exists++;
-            push @filters, [$a, $c, $t eq 'str' ? "eq" : "==", $args->{$a}];
-        }
-        if (defined $args->{"min_$a"}) {
-            $exists++;
-            push @filters, ["min_$a", $c, $t eq 'str' ? 'ge' : '>=',
-                            $args->{"min_$a"}];
-        }
-        if (defined $args->{"max_$a"}) {
-            $exists++;
-            push @filters, ["max_$a", $c, $t eq 'str' ? 'le' : '<=',
-                            $args->{"max_$a"}];
-        }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
-    }
-    for my $c (grep {$col_specs->{$_}{type} =~ /^str$/} @columns) {
-        my $a = $c;
-        my $exists;
-        if (defined $args->{"${a}_contain"}) {
-            $exists++;
-            push @filters, ["${a}_contain", $c, 'pos', $args->{"${a}_contain"}];
-        }
-        if (defined $args->{"${a}_not_contain"}) {
-            $exists++;
-            push @filters, ["${a}_not_contain", $c, '!pos',
-                            $args->{"${a}_not_contain"}];
-        }
-        if (defined $args->{"${a}_match"}) {
-            $exists++;
-            push @filters, ["${a}_match", $c, '=~', $args->{"${a}_match"}];
-        }
-        if (defined $args->{"${a}_not_match"}) {
-            $exists++;
-            push @filters, ["${a}_not_match", $c, '!~',
-                            $args->{"${a}_not_match"}];
-        }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
-    }
-    $query->{filters}       = \@filters;
-    $query->{filter_fields} = \@filter_fields;
-
-    my @searchable_fields = grep {
-        !defined($cspec->{searchable}) || $cspec->{searchable}
-        } @columns;
-    my $search_opts = {ci => $opts->{case_insensitive_search}};
-    my $search_re;
-    my $q = $args->{q};
-    if (defined $q) {
-        if ($opts->{word_search}) {
-            $search_re = $opts->{case_insensitive_search} ?
-                qr/\b$q\b/i : qr/\b$q\b/;
-        } else {
-            $search_re = $opts->{case_insensitive_search} ?
-                qr/$q/i : qr/$q/;
-        }
-    }
-    $query->{q} = $args->{q};
-    $query->{search_opts} = $args->{search_opts};
-    unless ($opts->{custom_search}) {
-        $query->{search_fields} = \@searchable_fields;
-        $query->{search_str_fields} = [grep {
-            $ctype =~ /^(str)$/
-        } @searchable_fields];
-        $query->{search_array_fields} = [grep {
-            $ctype =~ /^(array)$/
-        } @searchable_fields];
-        $query->{search_re} = $search_re;
-    }
-
-    my @sort_fields;
-    my @sorts;
-    if (defined $args->{sort}) {
-        my @f = split /\s*[,;]\s*/, $args->{sort};
-        for my $f (@f) {
-            my $desc = $f =~ s/^-//;
-            return [400, "Unknown field in sort: $f"]
-                unless $f ~~ @columns;
-            return [400, "Field $f is not sortable"]
-                unless !defined($cspec->{sortable}) || $cspec->{sortable};
-            my $op = $t =~ /^(int|float)$/ ? '<=>' : 'cmp';
-            #print "t=$t, op=$op\n";
-            push @sorts, [$f, $op, $desc ? -1:1];
-            push @sort_fields, $f;
-        }
-    }
-    $query->{random}      = $args->{random};
-    $query->{sorts}       = \@sorts;
-    $query->{sort_fields} = \@sort_fields;
-
-    my @mentioned_fields =
-        keys %{{ map {$_=>1} @requested_fields,
-                     @filter_fields, @sort_fields }};
-    $query->{mentioned_fields} = \@mentioned_fields;
-
-    $query->{result_limit} = $args->{result_limit};
-    $query->{result_start} = $args->{result_start} // 1;
-
-    $log->tracef("parsed query: %s", $query);
-    [200, "OK", [$query]];
-}
+# __parse_query
 
 sub _gen_func {
     my ($self, $table_spec, $opts, $table_data, $func_meta) = @_;
 
+    my $col_specs; # TMP
+
     my $func = sub {
         my %args = @_;
 
-        $args{detail}           //= $opts->{default_detail};
-        $args{fields}           //= $opts->{default_fields};
-        $args{show_field_names} //= $opts->{default_show_field_names};
-        $args{sort}             //= $opts->{default_sort};
-        $args{random}           //= $opts->{default_random};
-        $args{result_limit}     //= $opts->{default_result_limit};
+        $args{detail}             //= $opts->{default_detail};
+        $args{fields}             //= $opts->{default_fields};
+        $args{return_field_names} //= $opts->{default_return_field_names};
+        $args{sort}               //= $opts->{default_sort};
+        $args{random}             //= $opts->{default_random};
+        $args{result_limit}       //= $opts->{default_result_limit};
 
         # XXX schema
         if (defined $args{fields}) {
@@ -425,13 +302,14 @@ sub _gen_func {
         }
 
         my $res = _parse_query(
-            \%args, $opts, $table_spec, $col_specs, $col2arg);
+            \%args, $opts, $table_spec, $col_specs);
         return $res unless $res->[0] == 200;
         my ($query) = @{$res->[2]};
 
         $query->{filters} = $opts->{default_filters}
             if defined($opts->{default_filters}) && !@{$query->{filters}};
 
+        my $col_specs; # TMP
         my @columns = keys %$col_specs;
 
         # retrieve data
@@ -597,7 +475,7 @@ sub _gen_func {
                 $row = $row->{$pk};
                 next ROW2;
             }
-            if ($args{show_field_names}) {
+            if ($args{return_field_names}) {
                 for (@columns) {
                     delete $row->{$_}
                         unless $_ ~~ @{$query->{requested_fields}};
@@ -630,7 +508,7 @@ and description afterwards.
 The resulting function will accept these arguments. The naming of arguments are
 designed to be less Perl-/database-centric.
 
-* *show_field_names* => BOOL (default 1)
+* *return_field_names* => BOOL (default 1)
 
   By default function will return AoH. If this argument is set to 0, then
   function will return AoA instead.
@@ -794,9 +672,9 @@ _
         #    }],
         #    summary => "Supply default filters",
         #},
-        default_show_field_names => {
+        default_return_field_names => {
             schema => 'bool',
-            summary => "Supply default 'show_field_names' ".
+            summary => "Supply default 'return_field_names' ".
                 "value for function arg spec",
         },
         default_sort => {
@@ -888,18 +766,18 @@ sub _gen_read_table_func {
     }
 
     my $opts = {
-        langs                    => $args{langs} // ['en_US'],
-        default_detail           => $args{default_detail},
-        default_show_field_names => $args{default_show_field_names},
-        default_fields           => $args{default_fields},
-        default_sort             => $args{default_sort},
-        default_random           => $args{default_random},
-        default_result_limit     => $args{default_result_limit},
-        default_filters          => $args{default_filters},
-        enable_search            => $args{enable_search} // 1,
-        custom_search            => $args{custom_search},
-        word_search              => $args{word_search},
-        case_insensitive_search  => $args{case_insensitive_search} // 1,
+        langs                      => $args{langs} // ['en_US'],
+        default_detail             => $args{default_detail},
+        default_return_field_names => $args{default_return_field_names},
+        default_fields             => $args{default_fields},
+        default_sort               => $args{default_sort},
+        default_random             => $args{default_random},
+        default_result_limit       => $args{default_result_limit},
+        default_filters            => $args{default_filters},
+        enable_search              => $args{enable_search} // 1,
+        custom_search              => $args{custom_search},
+        word_search                => $args{word_search},
+        case_insensitive_search    => $args{case_insensitive_search} // 1,
     };
 
     my $res;
