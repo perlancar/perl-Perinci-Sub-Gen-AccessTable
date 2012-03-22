@@ -684,6 +684,7 @@ sub _gen_func {
 }
 
 $SPEC{gen_read_table_func} = {
+    v => 1.1,
     summary => 'Generate function (and its metadata) to read table data',
     description => <<'_',
 
