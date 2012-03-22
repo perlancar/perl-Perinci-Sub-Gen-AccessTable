@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.08     2012-03-22
+
+         - Fixes for English translation.
+
+         - build: Tweak dependency.
+
+
 0.07     2012-03-22
 
          Rename distribution from Sub-Spec-Gen-ReadTable to
