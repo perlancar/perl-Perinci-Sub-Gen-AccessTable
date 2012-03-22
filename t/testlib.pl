@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Log::Any '$log';
 
-use Sub::Spec::Gen::ReadTable qw(gen_read_table_func);
+use Perinci::Sub::Gen::AccessTable qw(gen_read_table_func);
 use Test::More 0.96;
 
 sub test_gen {
@@ -35,11 +35,11 @@ sub test_gen {
 
         if ($res->[0] == 200) {
             my $func = $res->[2]{code};
-            my $spec = $res->[2]{spec};
+            my $meta = $res->[2]{meta};
             is(ref($func), 'CODE', 'func returned');
-            is(ref($spec), 'HASH', 'spec returned');
-            my $args = $spec->{args};
-            for my $a (qw/show_field_names detail fields
+            is(ref($meta), 'HASH', 'meta returned');
+            my $args = $meta->{args};
+            for my $a (qw/with_field_names detail fields
                           sort random result_limit result_start
                          /) {
                 ok($args->{$a}, "common arg '$a' generated");
@@ -77,13 +77,13 @@ sub gen_test_data {
 
     my $table_spec = {
         columns => {
-            s  => ['str*'   => {column_index=>0, }],
-            s2 => ['str*'   => {column_index=>1, column_filterable=>0}],
-            s3 => ['str*'   => {column_index=>2, column_filterable_regex=>0}],
-            i  => ['int*'   => {column_index=>3, }],
-            f  => ['float*' => {column_index=>4, }],
-            a  => ['array*' => {column_index=>5, column_sortable=>0, }],
-            b  => ['bool*'  => {column_index=>6, }],
+            s  => {schema=>'str*'   , index=>0, filterable_regex=>1, },
+            s2 => {schema=>'str*'   , index=>1, filterable=>0, },
+            s3 => {schema=>'str*'   , index=>2, },
+            i  => {schema=>'int*'   , index=>3, },
+            f  => {schema=>'float*' , index=>4, },
+            a  => {schema=>'array*' , index=>5, sortable=>0, },
+            b  => {schema=>'bool*'  , index=>6, },
         },
         pk => 's',
     };

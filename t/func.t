@@ -78,7 +78,7 @@ test_gen(
 );
 
 test_gen(
-    name => 'fields, show_field_names',
+    name => 'fields, with_field_names',
     table_data => $table_data,
     table_spec => $table_spec,
     status => 200,
@@ -119,7 +119,7 @@ test_gen(
                 or diag explain $fres->[2];
         };
 
-        $fres = $func->(fields=>"b, s, b", show_field_names=>0);
+        $fres = $func->(fields=>"b, s, b", with_field_names=>0);
         subtest "multiple duplicate fields" => sub {
             is($fres->[0], 200, "status")
                 or diag explain $fres;
@@ -144,33 +144,39 @@ test_gen(
     status => 200,
     post_test => sub {
         my ($res) = @_;
-        my $func = $res->[2]{code};
+        my $f = $res->[2]{code};
 
-        test_query($func, {b=>1}, 2, 'bool filter: F=1');
-        test_query($func, {b=>0}, 2, 'bool filter: F=0');
+        test_query($f, {b=>1}, 2, 'bool filter: F=1');
+        test_query($f, {"b.is"=>1}, 2, 'bool filter: F.is=1');
+        test_query($f, {b=>0}, 2, 'bool filter: F=0');
+        test_query($f, {"b.is"=>0}, 2, 'bool filter: F.is=0');
 
-        test_query($func, {i=>4}, 1, 'int filter: F');
-        test_query($func, {min_i=>4}, 1, 'int filter: min_F');
-        test_query($func, {max_i=>2}, 3, 'int filter: max_F');
+        # i don't test .is again below, assumed ok.
 
-        test_query($func, {f=>0.2}, 1, 'float filter: F');
-        test_query($func, {min_f=>0.2}, 3, 'float filter: min_F');
-        test_query($func, {max_f=>0.2}, 2, 'float filter: max_F');
+        test_query($f, {i=>4}, 1, 'int filter: F');
+        test_query($f, {"i.min"=>4}, 1, 'int filter: F.min');
+        test_query($f, {"i.max"=>2}, 3, 'int filter: F.max');
 
-        test_query($func, {has_a=>[qw/t1/]}, 2, 'array filter: has_F t1');
-        test_query($func, {lacks_a=>[qw/t2/]}, 2, 'array filter: lacks_F t2');
-        test_query($func, {has_a=>[qw/t1 t2/]}, 1, 'array filter: has_F t1 t2');
-        test_query($func, {lacks_a=>[qw/t1 t2/]}, 1, 'ary f: lacks_F t1 t2');
+        test_query($f, {f=>0.2}, 1, 'float filter: F');
+        test_query($f, {"f.min"=>0.2}, 3, 'float filter: F.min');
+        test_query($f, {"f.max"=>0.2}, 2, 'float filter: F.max');
 
-        test_query($func, {s=>'a1'}, 1, 'str filter: F');
-        test_query($func, {min_s=>'a2'}, 3, 'str filter: min_F');
-        test_query($func, {max_s=>'a2'}, 2, 'str filter: max_F');
-        test_query($func, {s_contain=>'a'}, 3, 'str filter: F_contain');
-        test_query($func, {s_not_contain=>'a'}, 1, 'str filter: F_not_contain');
-        test_query($func, {s_match=>'[12]'}, 3, 'str filter: F_match');
-        test_query($func, {s_not_match=>'[12]'}, 1, 'str filter: F_not_match');
+        test_query($f, {"a.has"=>[qw/t1/]}, 2, 'array filter: F.has t1');
+        test_query($f, {"a.lacks"=>[qw/t2/]}, 2, 'array filter: F.lacks t2');
+        test_query($f,{"a.has"=>[qw/t1 t2/]},1, 'array filter: F.has t1 t2');
+        test_query($f,{"a.lacks"=>[qw/t1 t2/]},1, 'ary f: F.lacks t1 t2');
 
-        test_query($func, {b=>0, min_i=>2}, 1, 'multiple filters');
+        test_query($f, {s=>'a1'}, 1, 'str filter: F');
+        test_query($f, {"s.min"=>'a2'}, 3, 'str filter: F.min');
+        test_query($f, {"s.max"=>'a2'}, 2, 'str filter: F.max');
+        test_query($f, {"s.xmin"=>'a2'}, 2, 'str filter: F.xmin');
+        test_query($f, {"s.xmax"=>'a2'}, 1, 'str filter: F.xmax');
+        test_query($f, {"s.contains"=>'a'}, 3, 'str filter: F.contains');
+        test_query($f, {"s.not_contains"=>'a'},1, 'str filter: F.not_contains');
+        test_query($f,{"s.matches"=>'[12]'}, 3, 'str filter: F.matches');
+        test_query($f,{"s.not_matches"=>'[12]'},1, 'str filter: F.not_matches');
+
+        test_query($f, {b=>0, "i.min"=>2}, 1, 'multiple filters');
 
     },
 );
@@ -258,12 +264,8 @@ test_gen(
     ],
     table_spec => {
         columns => {
-            id => ['int*' => {
-                column_index => 0,
-            }],
-            a => ['array*' => {
-                column_index => 1,
-            }],
+            id => {schema=>'int*', index=>0},
+            a  => {schema=>'array*', index => 1},
         },
         pk => 'id',
     },
@@ -286,16 +288,9 @@ test_gen(
     ],
     table_spec => {
         columns => {
-            id => ['int*' => {
-                column_index => 0,
-            }],
-            s => ['str*' => {
-                column_index => 1,
-                column_searchable => 0,
-            }],
-            s2 => ['str*' => {
-                column_index => 2,
-            }],
+            id => {schema=>'int*', index => 0},
+            s  => {schema=>'str*', index => 1, searchable => 0},
+            s2 => {schema=>'str*', index => 2},
         },
         pk => 'id',
     },
