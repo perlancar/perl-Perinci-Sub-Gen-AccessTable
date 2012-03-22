@@ -223,22 +223,6 @@ test_gen(
 );
 
 test_gen(
-    name => 'default_filters',
-    table_data => $table_data,
-    table_spec => $table_spec,
-    other_args => {default_filters=>[['b','truth',0]]},
-    status => 200,
-    post_test => sub {
-        my ($res) = @_;
-        my $func = $res->[2]{code};
-
-        test_query($func, {}, 2, 'default filter: b=0');
-        test_query($func, {"i.min"=>2}, 2,
-                   'default filter + filter = default filter not added');
-    },
-);
-
-test_gen(
     name => 'default_result_limit',
     table_data => $table_data,
     table_spec => $table_spec,

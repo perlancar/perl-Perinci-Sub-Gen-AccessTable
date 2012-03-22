@@ -196,7 +196,6 @@ _
         langs       => $langs,
         name        => 'q',
         type        => 'str',
-        default     => 1,
         cat_name    => 'filtering',
         cat_text    => 'filtering',
         summary     => "Search",
@@ -216,6 +215,7 @@ _
             langs       => $langs,
             name        => "$cname.is",
             type        => "$ctype*",
+            default     => $opts->{"default_$cname.is"},
             cat_name    => "filtering-for-$cname",
             cat_text    => "filtering for [_1]",
             summary     => "Only return records where the '[_1]' field ".
@@ -230,6 +230,7 @@ _
                 langs       => $langs,
                 name        => "$cname.has",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.has"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -240,6 +241,7 @@ _
                 langs       => $langs,
                 name        => "$cname.lacks",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.lacks"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -252,6 +254,7 @@ _
                 langs       => $langs,
                 name        => "$cname.min",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.min"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -262,6 +265,7 @@ _
                 langs       => $langs,
                 name        => "$cname.max",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.max"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -272,6 +276,7 @@ _
                 langs       => $langs,
                 name        => "$cname.xmin",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.xmin"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -282,6 +287,7 @@ _
                 langs       => $langs,
                 name        => "$cname.xmax",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.xmax"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -294,6 +300,7 @@ _
                 langs       => $langs,
                 name        => "$cname.contains",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.contains"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -304,6 +311,7 @@ _
                 langs       => $langs,
                 name        => "$cname.not_contains",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.not_contains"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -315,6 +323,7 @@ _
                     langs       => $langs,
                     name        => "$cname.matches",
                     type        => $ctype,
+                    default     => $opts->{"default_$cname.matches"},
                     cat_name    => "filtering-for-$cname",
                     cat_text    => "filtering for [_1]",
                     summary => "Only return records where the '[_1]' field ".
@@ -325,6 +334,7 @@ _
                     langs       => $langs,
                     name        => "$cname.not_matches",
                     type        => $ctype,
+                    default     => $opts->{"default_$cname.not_matches"},
                     cat_name    => "filtering-for-$cname",
                     cat_text    => "filtering for [_1]",
                     summary => "Only return records where the '[_1]' field " .
@@ -517,28 +527,22 @@ sub _gen_func {
     my ($self, $table_spec, $opts, $table_data, $func_meta) = @_;
 
     my $cspecs = $table_spec->{columns};
+    my $fargs  = $func_meta->{args};
     my $func = sub {
         my %args = @_;
 
-        $args{detail}           //= $opts->{default_detail};
-        $args{fields}           //= $opts->{default_fields};
-        $args{with_field_names} //= $opts->{default_with_field_names};
-        $args{sort}             //= $opts->{default_sort};
-        $args{random}           //= $opts->{default_random};
-        $args{result_limit}     //= $opts->{default_result_limit};
-
         # XXX schema
-        if (defined $args{fields}) {
-            $args{fields} = [split /\s*[,;]\s*/, $args{fields}]
-                unless ref($args{fields}) eq 'ARRAY';
+        while (my ($ak, $av) = each %$fargs) {
+            $args{$ak} //= $av->{schema}[1]{default};
+            if ($ak eq 'fields' && defined($args{$ak})) {
+                $args{$ak} = [split /\s*[,;]\s*/, $args{$ak}]
+                    unless ref($args{$ak}) eq 'ARRAY';
+            }
         }
 
         my $res = __parse_query($table_spec, $opts, $func_meta, \%args);
         return $res unless $res->[0] == 200;
         my $query = $res->[2];
-
-        $query->{filters} = $opts->{default_filters}
-            if defined($opts->{default_filters}) && !@{$query->{filters}};
 
         # retrieve data
         my $data;
@@ -886,13 +890,6 @@ _
             schema => 'str',
             summary => "Supply default 'fields' value for function arg spec",
         },
-        # not yet documented
-        #default_filters => {
-        #    schema => ['array' => {
-        #        of => 'array*', # XXX filter structure
-        #    }],
-        #    summary => "Supply default filters",
-        #},
         default_with_field_names => {
             schema => 'bool',
             summary => "Supply default 'with_field_names' ".
@@ -932,6 +929,18 @@ For example, if search term is 'pine' and column value is 'green pineapple',
 search will match if word_search=false, but won't match under word_search.
 
 This will not have effect under 'custom_search'.
+
+_
+        },
+        default_arg_values => {
+            schema => 'hash',
+            summary => "Specify defaults for generated function's arguments",
+            description => <<'_',
+
+Can be used to supply default filters, e.g.
+
+    # limit years for credit card expiration date
+    { "year.min" => $curyear, "year.max" => $curyear+10, }
 
 _
         },
@@ -990,6 +999,7 @@ sub _gen_read_table_func {
         $cspec->{schema} = __parse_schema($cspec->{schema});
     }
 
+    my $dav = $args{default_arg_values} // {};
     my $opts = {
         langs                      => $args{langs} // ['en_US'],
         default_detail             => $args{default_detail},
@@ -998,11 +1008,11 @@ sub _gen_read_table_func {
         default_sort               => $args{default_sort},
         default_random             => $args{default_random},
         default_result_limit       => $args{default_result_limit},
-        default_filters            => $args{default_filters},
         enable_search              => $args{enable_search} // 1,
         custom_search              => $args{custom_search},
         word_search                => $args{word_search},
         case_insensitive_search    => $args{case_insensitive_search} // 1,
+        (map { ("default_$_" => $dav->{$_}) } keys %$dav),
     };
 
     my $res;

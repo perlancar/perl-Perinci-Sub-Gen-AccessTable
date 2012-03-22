@@ -351,5 +351,21 @@ test_gen(
     },
 );
 
+test_gen(
+    name => 'default_arg_values',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_arg_values => {"f.min"=>1}},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {}, 2, 'default value for f.min');
+        test_query($func, {"f.min"=>0}, 4, 'default value for f.min');
+    },
+);
+
+
 DONE_TESTING:
 done_testing();
