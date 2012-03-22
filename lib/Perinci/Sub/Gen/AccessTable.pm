@@ -49,34 +49,40 @@ sub __is_filter_arg {
 }
 
 sub _add_arg {
-    my ($self, $func_meta, $arg_name, $langs, $arg_spec, $locl_args) = @_;
+    my ($self, %args) = @_;
 
-    my $cname = $arg_name; $cname =~ s/\..+//;
-    $locl_args //= [$cname];
+    my $arg_name  = $args{name};
+    my $cname     = $args{name}; $cname =~ s/\..+//;
+    my $func_meta = $args{func_meta};
+    my $locl_args = [$cname];
+    my $langs     = $args{langs};
 
     die "BUG: Duplicate arg $arg_name" if $func_meta->{args}{$arg_name};
 
+    my $tag = {name=>"cat:$args{cat_name}"};
+    my $schema = ref($args{type}) eq 'ARRAY' ? $args{type} :
+        [$args{type} => {}];
+    $schema->[1] //= {};
+    $schema->[1]{default} = $args{default};
+    my $arg_spec = {
+        schema => $schema,
+        tags => [$tag],
+    };
+
     for my $prop (qw/summary description/) {
-        next unless defined $arg_spec->{$prop};
-        $arg_spec->{$prop} = trim_blank_lines($arg_spec->{$prop});
-        if ($arg_spec->{$prop}) {
-            for my $lang (@$langs) {
-                my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
+        next unless defined $args{$prop};
+        $args{$prop} = trim_blank_lines($args{$prop});
+        for my $lang (@$langs) {
+            my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
                 $arg_spec->{$k} = $self->locl(
-                    $lang, $arg_spec->{$prop}, @$locl_args);
-            }
+                    $lang, $args{$prop}, @$locl_args);
         }
     }
-    if ($arg_spec->{tags}) {
-        for my $tag (@{$arg_spec->{tags}}) {
-            next unless ref($tag) eq 'HASH';
-            for my $lang (@$langs) {
-                for my $prop (qw/summary/) {
-                    my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
-                    $tag->{$k} = $self->locl(
-                        $lang, $tag->{summary}, @$locl_args);
-                }
-            }
+    for my $lang (@$langs) {
+        for my $prop (qw/summary/) {
+            my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
+            $tag->{$k} = $self->locl(
+                $lang, $args{cat_text}, @$locl_args);
         }
     }
 
@@ -92,97 +98,109 @@ sub _gen_meta {
     my $func_meta = {
         v => 1.1,
         summary => "REPLACE ME",
-        description => "REPLACE ME",
         args => {},
     };
     my $fargs = $func_meta->{args};
 
     $self->_add_arg(
-        $func_meta, 'with_field_names', $langs, {
-            schema => ['bool' => {
-                default => $opts->{default_with_field_names},
-            }],
-            tags => [{name=>'cat:field-selection', summary=>'field selection'}],
-            summary => 'Return field names in each record (as hash/'.
-                'associative array)',
-            description => <<'_',
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'with_field_names',
+        type        => 'bool',
+        default     => $opts->{default_with_field_names},
+        cat_name    => 'field-selection',
+        cat_text    => 'field selection',
+        summary     => 'Return field names in each record (as hash/'.
+            'associative array)',
+        description => <<'_',
 
 When enabled, function will return each record as hash/associative array
 (field name => value pairs). Otherwise, function will return each record
 as list/array (field value, field value, ...).
 
 _
-        });
+    );
     $self->_add_arg(
-        $func_meta, 'detail', $langs, {
-            schema => ['bool' => {
-                default => $opts->{default_detail} // 0,
-            }],
-            tags => [{name=>'cat:field-selection', summary=>'field selection'}],
-            summary => 'Return array of full records instead of just ID fields',
-            description => <<'_',
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'detail',
+        type        => 'bool',
+        default     => $opts->{default_detail} // 0,
+        cat_name    => 'field-selection',
+        cat_text    => 'field selection',
+        summary     => 'Return array of full records instead of just ID fields',
+        description => <<'_',
 
 By default, only the key (ID) field is returned per result entry.
 
 _
-        });
+    );
     $self->_add_arg(
-        $func_meta, 'fields', $langs, {
-            schema => ['array' => {
-                of => 'str*',
-                default => $opts->{default_fields},
-            }],
-            tags => [{name=>'cat:field-selection', summary=>'field selection'}],
-            summary => 'Select fields to return',
-        });
-
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'fields',
+        type        => ['array*' => {of=>'str*'}],
+        default     => $opts->{default_fields},
+        cat_name    => 'field-selection',
+        cat_text    => 'field selection',
+        summary     => 'Select fields to return',
+    );
     $self->_add_arg(
-        $func_meta, 'sort', $langs, {
-            schema => ['str' => {
-                default => $opts->{default_sort},
-            }],
-            tags => [{name=>'cat:ordering', summary=>'ordering'}],
-            summary => 'Order records according to certain field(s)',
-            description => <<'_',
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'sort',
+        type        => 'str',
+        default     => $opts->{default_sort},
+        cat_name    => 'ordering',
+        cat_text    => 'ordering',
+        summary     => 'Order records according to certain field(s)',
+        description => <<'_',
 
 A list of field names separated by comma. Each field can be prefixed with '-' to
 specify descending order instead of the default ascending.
 
 _
-        });
+    );
     $self->_add_arg(
-        $func_meta, 'random', $langs, {
-            schema => ['bool' => {
-                default => $opts->{default_random} // 0,
-            }],
-            tags => [{name=>'cat:ordering', summary=>'ordering'}],
-            summary => 'Return records in random order',
-        });
-
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'random',
+        type        => 'bool',
+        default     => $opts->{default_random} // 0,
+        cat_name    => 'ordering',
+        cat_text    => 'ordering',
+        summary     => 'Return records in random order',
+    );
     $self->_add_arg(
-        $func_meta, 'result_limit', $langs, {
-            schema => ['int' => {
-                default => $opts->{default_result_limit},
-            }],
-            tags => [{name=>'cat:paging', summary=>'paging'}],
-            summary => 'Only return a certain number of records',
-        });
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'result_limit',
+        type        => 'int',
+        default     => $opts->{default_result_limit},
+        cat_name    => 'paging',
+        cat_text    => 'paging',
+        summary     => 'Only return a certain number of records',
+    );
     $self->_add_arg(
-        $func_meta, 'result_start', $langs, {
-            schema => ['int' => {
-                default => 1,
-            }],
-            tags => [{name=>'cat:paging', summary=>'paging'}],
-            summary => "Only return starting from the n'th record",
-        });
-
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'result_start',
+        type        => 'int',
+        default     => 1,
+        cat_name    => 'paging',
+        cat_text    => 'paging',
+        summary => "Only return starting from the n'th record",
+    );
     $self->_add_arg(
-        $func_meta, 'q', $langs, {
-            schema => ['str' => {
-            }],
-            tags => [{name=>'cat:filtering', summary=>'filtering'}],
-            summary => 'Search',
-        }) if $opts->{enable_search} // 1;
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'q',
+        type        => 'str',
+        default     => 1,
+        cat_name    => 'filtering',
+        cat_text    => 'filtering',
+        summary     => "Search",
+    ) if $opts->{enable_search} // 1;
 
     # add filter arguments for each table column
 
@@ -194,108 +212,124 @@ _
         next if defined($cspec->{filterable}) && !$cspec->{filterable};
 
         $self->_add_arg(
-            $func_meta, "$cname.is", $langs, {
-                schema => ["$ctype*" => {
-                }],
-                tags => [{name=>"cat:filtering-for-$cname",
-                          summary=>'filtering for [_1]'}],
-                summary => "Only return records where the '[_1]' field ".
-                         "equals specified value",
-            });
+            func_meta   => $func_meta,
+            langs       => $langs,
+            name        => "$cname.is",
+            type        => "$ctype*",
+            cat_name    => "filtering-for-$cname",
+            cat_text    => "filtering for [_1]",
+            summary     => "Only return records where the '[_1]' field ".
+                "equals specified value",
+        );
         unless ($fargs->{$cname}) {
             $fargs->{$cname} = $fargs->{"$cname.is"};
         }
         if ($ctype eq 'array') {
             $self->_add_arg(
-                $func_meta, "$cname.has", $langs, {
-                    schema => ['array' => {
-                        of => 'str*',
-                    }],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "is an array/list which contains specified value",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.has",
+                type        => [array => {of=>'str*'}],
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is an array/list which contains specified value",
+            );
             $self->_add_arg(
-                $func_meta, "$cname.lacks", $langs, {
-                    schema => ['array' => {
-                        of => 'str*',
-                    }],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "is an array/list which does not contain specified ".
-                            "value",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.lacks",
+                type        => [array => {of=>'str*'}],
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is an array/list which does not contain specified value",
+            );
         }
         if ($ctype =~ /^(?:int|float|str)$/) { # XXX all Comparable types
             $self->_add_arg(
-                $func_meta, "$cname.min", $langs, {
-                    schema => [$ctype => {}],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "is greater than or equal to specified value",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.min",
+                type        => [array => {of=>'str*'}],
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is greater than or equal to specified value",
+            );
             $self->_add_arg(
-                $func_meta, "$cname.max", $langs, {
-                    schema => [$ctype => {}],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "is less than or equal to specified value",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.max",
+                type        => $ctype,
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is less than or equal to specified value",
+            );
             $self->_add_arg(
-                $func_meta, "$cname.xmin", $langs, {
-                    schema => [$ctype => {}],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "is greater than specified value",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.xmin",
+                type        => [array => {of=>'str*'}],
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is greater than specified value",
+            );
             $self->_add_arg(
-                $func_meta, "$cname.xmax", $langs, {
-                    schema => [$ctype => {}],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "is less than specified value",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.xmax",
+                type        => $ctype,
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is less than specified value",
+            );
         }
         if ($ctype eq 'str') {
             $self->_add_arg(
-                $func_meta, "$cname.contains", $langs, {
-                    schema => [$ctype => {}],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "contains specified text",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.contains",
+                type        => $ctype,
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "contains specified text",
+            );
             $self->_add_arg(
-                $func_meta, "$cname.not_contains", $langs, {
-                    schema => [$ctype => {}],
-                    tags => [{name=>"cat:filtering-for-$cname",
-                              summary=>'filtering for [_1]'}],
-                    summary => "Only return records where the '[_1]' field ".
-                        "does not contain specified text",
-                });
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$cname.not_contains",
+                type        => $ctype,
+                cat_name    => "filtering-for-$cname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "does not contain specified text",
+            );
             if ($cspec->{filterable_regex}) {
                 $self->_add_arg(
-                    $func_meta, "$cname.matches", $langs, {
-                        schema => [$ctype => {}],
-                        tags => [{name=>"cat:filtering-for-$cname",
-                                  summary=>'filtering for [_1]'}],
-                        summary=>"Only return records where the '[_1]' field " .
-                            "matches specified regular expression pattern",
-                    });
+                    func_meta   => $func_meta,
+                    langs       => $langs,
+                    name        => "$cname.matches",
+                    type        => $ctype,
+                    cat_name    => "filtering-for-$cname",
+                    cat_text    => "filtering for [_1]",
+                    summary => "Only return records where the '[_1]' field ".
+                        "matches specified regular expression pattern",
+                );
                 $self->_add_arg(
-                    $func_meta, "$cname.not_matches", $langs, {
-                        schema => [$ctype => {}],
-                        tags => [{name=>"cat:filtering-for-$cname",
-                                  summary=>'filtering for [_1]'}],
-                        summary=>"Only return records where the '[_1]' field " .
-                            "does not match specified regular expression",
-                    });
+                    func_meta   => $func_meta,
+                    langs       => $langs,
+                    name        => "$cname.not_matches",
+                    type        => $ctype,
+                    cat_name    => "filtering-for-$cname",
+                    cat_text    => "filtering for [_1]",
+                    summary => "Only return records where the '[_1]' field " .
+                        "does not match specified regular expression",
+                );
             }
         }
     } # for each cspec
