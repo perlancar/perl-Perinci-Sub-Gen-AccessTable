@@ -61,8 +61,8 @@ sub _add_arg {
         $arg_spec->{$prop} = trim_blank_lines($arg_spec->{$prop});
         if ($arg_spec->{$prop}) {
             for my $lang (@$langs) {
-                next if $lang eq 'en_US';
-                $arg_spec->{"$prop.alt.lang.$lang"} = $self->locl(
+                my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
+                $arg_spec->{$k} = $self->locl(
                     $lang, $arg_spec->{$prop}, @$locl_args);
             }
         }
@@ -71,9 +71,11 @@ sub _add_arg {
         for my $tag (@{$arg_spec->{tags}}) {
             next unless ref($tag) eq 'HASH';
             for my $lang (@$langs) {
-                next if $lang eq 'en_US';
-                $tag->{"summary.alt.lang.$lang"} =
-                    $self->locl($lang, $tag->{summary}, @$locl_args);
+                for my $prop (qw/summary/) {
+                    my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
+                    $tag->{$k} = $self->locl(
+                        $lang, $tag->{summary}, @$locl_args);
+                }
             }
         }
     }
@@ -193,7 +195,7 @@ _
 
         $self->_add_arg(
             $func_meta, "$cname.is", $langs, {
-                schema => ['$ctype*' => {
+                schema => ["$ctype*" => {
                 }],
                 tags => [{name=>"cat:filtering-for-$cname",
                           summary=>'filtering for [_1]'}],
