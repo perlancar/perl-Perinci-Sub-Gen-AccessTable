@@ -344,6 +344,14 @@ _
         }
     } # for each cspec
 
+    # custom filters
+    my $cff = $opts->{custom_filters} // {};
+    while (my ($cfn, $cf) = each %$cff) {
+        $fargs->{$cfn} and return [
+            400, "Custom filter '$cfn' clashes with another argument"];
+        $fargs->{$cfn} = $cf->{meta};
+    }
+
     [200, "OK", $func_meta];
 }
 
@@ -462,6 +470,15 @@ sub __parse_query {
     $query->{filters}       = \@filters;
     $query->{filter_fields} = \@filter_fields;
 
+    my $cff = $opts->{custom_filters} // {};
+    while (my ($cfn, $cf) = each %$cff) {
+        next unless defined $args->{$cfn};
+        push @filters, [$cf->{columns}, 'call', [$cf->{code}, $args->{$cfn}]];
+        for (@{$cf->{columns} // []}) {
+            push @filter_fields, $_ if !($_ ~~ @filter_fields);
+        }
+    }
+
     my @searchable_fields = grep {
         !defined($cspecs->{$_}{searchable}) || $cspecs->{$_}{searchable}
         } @columns;
@@ -533,7 +550,9 @@ sub _gen_func {
 
         # XXX schema
         while (my ($ak, $av) = each %$fargs) {
-            $args{$ak} //= $av->{schema}[1]{default};
+            if (defined $av->{schema}[1]{default}) {
+                $args{$ak} //= $av->{schema}[1]{default};
+            }
             if ($ak eq 'fields' && defined($args{$ak})) {
                 $args{$ak} = [split /\s*[,;]\s*/, $args{$ak}]
                     unless ref($args{$ak}) eq 'ARRAY';
@@ -625,6 +644,8 @@ sub _gen_func {
                     next ROW unless index($row_h->{$c}, $opn) >= 0;
                 } elsif ($op eq '!pos') {
                     next ROW if index($row_h->{$c}, $opn) >= 0;
+                } elsif ($op eq 'call') {
+                    next ROW unless $opn->[0]->($row_h, $opn->[1]);
                 } else {
                     die "BUG: Unknown op $op";
                 }
@@ -962,6 +983,24 @@ should return true if row matches search term.
 
 _
         },
+        custom_filters => {
+            schema => [hash => {of=>['hash*' => {keys=>{
+                'code'=>'code*', 'meta'=>'hash*'}}]}],
+            summary => 'Supply custom filters',
+            description => <<'_',
+
+A hash of filter name and definitions. Filter name will be used as generated
+function's argument and must not clash with other arguments. Filter definition
+is a hash containing these keys: *meta* (hash, argument metadata), *code*,
+*columns* (array, list of table columns related to this field).
+
+Code will be called for each row to be filtered and will be supplied ($row, $v,
+$opts) where $v is the filter value (from the function argument) and $row the
+hashref row value. $opts is currently empty. Code should return true if row
+satisfies the filter.
+
+_
+        },
     },
 };
 sub gen_read_table_func {
@@ -998,6 +1037,13 @@ sub _gen_read_table_func {
         $cspec->{schema} //= 'any';
         $cspec->{schema} = __parse_schema($cspec->{schema});
     }
+    #  make each custom filter's schema normalized
+    my $cff = $args{custom_filters} // {};
+    while (my ($cfn, $cf) = each %$cff) {
+        $cf->{meta} //= {};
+        $cf->{meta}{schema} //= 'any';
+        $cf->{meta}{schema} = __parse_schema($cf->{meta}{schema});
+    }
 
     my $dav = $args{default_arg_values} // {};
     my $opts = {
@@ -1013,6 +1059,7 @@ sub _gen_read_table_func {
         word_search                => $args{word_search},
         case_insensitive_search    => $args{case_insensitive_search} // 1,
         (map { ("default_$_" => $dav->{$_}) } keys %$dav),
+        custom_filters             => $cff,
     };
 
     my $res;
