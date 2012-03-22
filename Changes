@@ -1,5 +1,15 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.09     2012-03-22
+
+         [ENHANCEMENTS]
+
+         - Remove 'default_filters' which exposed internal filter structure,
+           replace it with 'default_arg_values' instead.
+
+         - Add 'custom_filters'.
+
+
 0.08     2012-03-22
 
          - Fixes for English translation.
