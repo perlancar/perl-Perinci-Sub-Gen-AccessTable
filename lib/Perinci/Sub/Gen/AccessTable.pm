@@ -363,12 +363,12 @@ sub __parse_query {
     my @columns = keys %$cspecs;
 
     my @requested_fields;
-    if ($args->{fields}) {
-        @requested_fields = @{ $args->{fields} };
-        $args->{with_field_names} //= 1;
-    } elsif ($args->{detail}) {
+    if ($args->{detail}) {
         @requested_fields = @columns;
         $args->{with_field_names} //= 1;
+    } elsif ($args->{fields}) {
+        @requested_fields = @{ $args->{fields} };
+        $args->{with_field_names} //= 0;
     } else {
         @requested_fields = ($table_spec->{pk});
         $args->{with_field_names} //= 0;
@@ -553,6 +553,7 @@ sub _gen_func {
             if (defined $av->{schema}[1]{default}) {
                 $args{$ak} //= $av->{schema}[1]{default};
             }
+            # array-ize "string,with,comma"
             if ($ak eq 'fields' && defined($args{$ak})) {
                 $args{$ak} = [split /\s*[,;]\s*/, $args{$ak}]
                     unless ref($args{$ak}) eq 'ARRAY';
