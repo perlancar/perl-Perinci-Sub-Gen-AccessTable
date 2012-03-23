@@ -1,5 +1,16 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.10     2012-03-23
+
+         [FIXES]
+
+         - Fix --detail
+
+         [INCOMPATIBLE CHANGES]
+
+         - --fields now does not automatically enables --with-field-names
+
+
 0.09     2012-03-22
 
          [ENHANCEMENTS]
