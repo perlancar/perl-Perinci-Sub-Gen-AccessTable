@@ -94,7 +94,7 @@ test_gen(
         $fres = $func->(fields=>["x"]);
         is($fres->[0], 400, "mention unknown field in fields -> fail");
 
-        $fres = $func->(fields=>"s");
+        $fres = $func->(fields=>"s", with_field_names=>1);
         subtest "single field" => sub {
             is($fres->[0], 200, "status")
                 or diag explain $fres;
@@ -107,7 +107,7 @@ test_gen(
                 or diag explain $fres->[2];
         };
 
-        $fres = $func->(fields=>"s, b");
+        $fres = $func->(fields=>"s, b", with_field_names=>1);
         subtest "multiple fields" => sub {
             is($fres->[0], 200, "status")
                 or diag explain $fres;
@@ -120,7 +120,7 @@ test_gen(
                 or diag explain $fres->[2];
         };
 
-        $fres = $func->(fields=>"b, s, b", with_field_names=>0);
+        $fres = $func->(fields=>"b, s, b");
         subtest "multiple duplicate fields" => sub {
             is($fres->[0], 200, "status")
                 or diag explain $fres;

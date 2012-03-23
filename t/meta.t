@@ -161,10 +161,10 @@ test_gen(
             is($fres->[0], 200, "status")
                 or diag explain $fres;
             is_deeply($fres->[2], [
-                {s=>'a1', b=>0},
-                {s=>'b1', b=>0},
-                {s=>'a3', b=>1},
-                {s=>'a2', b=>1},
+                ['a1', 0],
+                ['b1', 0],
+                ['a3', 1],
+                ['a2', 1],
             ], "sort result")
                 or diag explain $fres->[2];
         };
