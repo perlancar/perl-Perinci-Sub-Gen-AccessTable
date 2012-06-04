@@ -1,5 +1,13 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.12     2012-06-04
+
+         [ENHANCEMENTS]
+
+         - Add arguments 'summary' and 'description' to pass to generated
+           metadata.
+
+
 0.11     2012-06-04
 
          [INCOMPATIBLE CHANGES]
