@@ -194,19 +194,19 @@ test_gen(
         test_query(
             $func, {sort=>"s", result_limit=>2},
             sub {
-                my ($rows) = @_;
-                is(scalar(@$rows), 2, "num of results = 2");
-                is($rows->[0], "a1", "row #1");
-                is($rows->[1], "a2", "row #2");
+                my ($rr) = @_;
+                is(scalar(@$rr), 2, "num of results = 2");
+                is($rr->[0], "a1", "rec #1");
+                is($rr->[1], "a2", "rec #2");
             },
             'result_limit after ordering');
         test_query(
             $func, {sort=>"s", result_start=>3, result_limit=>2},
             sub {
-                my ($rows) = @_;
-                is(scalar(@$rows), 2, "num of results = 2");
-                is($rows->[0], "a3", "row #1");
-                is($rows->[1], "b1", "row #2");
+                my ($rr) = @_;
+                is(scalar(@$rr), 2, "num of results = 2");
+                is($rr->[0], "a3", "rec #1");
+                is($rr->[1], "b1", "rec #2");
             },
             'result_start + result_limit');
     },
@@ -239,7 +239,7 @@ test_gen(
 );
 
 # XXX test sorted=>1
-# XXX test columns_selected=>1
+# XXX test fields_selected=>1
 # XXX test paged=>1 (though this is also exercised in examples/num-and-words
 
 test_gen(
@@ -264,7 +264,7 @@ test_gen(
         {id=>3, a=>[qw//]},
     ],
     table_spec => {
-        columns => {
+        fields => {
             id => {schema=>'int*', index=>0},
             a  => {schema=>'array*', index => 1},
         },
@@ -281,14 +281,14 @@ test_gen(
 );
 
 test_gen(
-    name => 'column_searchable=0',
+    name => 'fields_searchable=0',
     table_data => [
         {id=>1, s=>'a', s2=>'d'},
         {id=>2, s=>'b', s2=>'e'},
         {id=>3, s=>'c', s2=>'f'},
     ],
     table_spec => {
-        columns => {
+        fields => {
             id => {schema=>'int*', index => 0},
             s  => {schema=>'str*', index => 1, searchable => 0},
             s2 => {schema=>'str*', index => 2},
@@ -300,8 +300,8 @@ test_gen(
         my ($res) = @_;
         my $func = $res->[2]{code};
 
-        test_query($func, {q=>'a'}, 0, "doesn't search non-searchable column");
-        test_query($func, {q=>'e'}, 1, "search searchable column");
+        test_query($func, {q=>'a'}, 0, "doesn't search non-searchable field");
+        test_query($func, {q=>'e'}, 1, "search searchable field");
     },
 );
 
@@ -340,8 +340,8 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {custom_search=>sub {
-                       my ($row, $q, $opts) = shift;
-                       $row->{i} % 2;
+                       my ($r, $q, $opts) = shift;
+                       $r->{i} % 2;
                    }},
     status => 200,
     post_test => sub {
@@ -374,18 +374,18 @@ test_gen(
     other_args => {
         custom_filters => {
             cf1=>{meta=>{schema=>'float'},
-                  columns=>[qw/f/],
+                  fields=>[qw/f/],
                   code=>sub {
-                      my ($row, $v, $opts) = @_;
-                      $log->tracef("inside cf1, row=%s, v=%s", $row, $v);
-                      $row->{f} >= $v*2;
+                      my ($r, $v, $opts) = @_;
+                      $log->tracef("inside cf1, r=%s, v=%s", $r, $v);
+                      $r->{f} >= $v*2;
                   }},
             cf2=>{meta=>{schema=>['int*'=>{default=>1}]},
-                  columns=>[qw/i/],
+                  fields=>[qw/i/],
                   code=>sub {
-                      my ($row, $v, $opts) = @_;
-                      $log->tracef("inside cf1, row=%s, v=%s", $row, $v);
-                      $row->{i} > $v;
+                      my ($r, $v, $opts) = @_;
+                      $log->tracef("inside cf1, r=%s, v=%s", $r, $v);
+                      $r->{i} > $v;
                   }},
         }
     },

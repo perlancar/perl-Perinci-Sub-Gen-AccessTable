@@ -52,9 +52,9 @@ sub _add_arg {
     my ($self, %args) = @_;
 
     my $arg_name  = $args{name};
-    my $cname     = $args{name}; $cname =~ s/\..+//;
+    my $fname     = $args{name}; $fname =~ s/\..+//;
     my $func_meta = $args{func_meta};
-    my $locl_args = [$cname];
+    my $locl_args = [$fname];
     my $langs     = $args{langs};
 
     die "BUG: Duplicate arg $arg_name" if $func_meta->{args}{$arg_name};
@@ -100,7 +100,7 @@ sub _gen_meta {
         summary => "REPLACE ME",
         args => {},
     };
-    my $fargs = $func_meta->{args};
+    my $func_args = $func_meta->{args};
 
     $self->_add_arg(
         func_meta   => $func_meta,
@@ -201,37 +201,37 @@ _
         summary     => "Search",
     ) if $opts->{enable_search} // 1;
 
-    # add filter arguments for each table column
+    # add filter arguments for each table field
 
-    for my $cname (keys %{$table_spec->{columns}}) {
-        my $cspec   = $table_spec->{columns}{$cname};
-        my $cschema = $cspec->{schema};
-        my $ctype   = $cschema->[0];
+    for my $fname (keys %{$table_spec->{fields}}) {
+        my $fspec   = $table_spec->{fields}{$fname};
+        my $fschema = $fspec->{schema};
+        my $ftype   = $fschema->[0];
 
-        next if defined($cspec->{filterable}) && !$cspec->{filterable};
+        next if defined($fspec->{filterable}) && !$fspec->{filterable};
 
         $self->_add_arg(
             func_meta   => $func_meta,
             langs       => $langs,
-            name        => "$cname.is",
-            type        => "$ctype*",
-            default     => $opts->{"default_$cname.is"},
-            cat_name    => "filtering-for-$cname",
+            name        => "$fname.is",
+            type        => "$ftype*",
+            default     => $opts->{"default_$fname.is"},
+            cat_name    => "filtering-for-$fname",
             cat_text    => "filtering for [_1]",
             summary     => "Only return records where the '[_1]' field ".
                 "equals specified value",
         );
-        unless ($fargs->{$cname}) {
-            $fargs->{$cname} = $fargs->{"$cname.is"};
+        unless ($func_args->{$fname}) {
+            $func_args->{$fname} = $func_args->{"$fname.is"};
         }
-        if ($ctype eq 'array') {
+        if ($ftype eq 'array') {
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.has",
+                name        => "$fname.has",
                 type        => [array => {of=>'str*'}],
-                default     => $opts->{"default_$cname.has"},
-                cat_name    => "filtering-for-$cname",
+                default     => $opts->{"default_$fname.has"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "is an array/list which contains specified value",
@@ -239,23 +239,23 @@ _
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.lacks",
+                name        => "$fname.lacks",
                 type        => [array => {of=>'str*'}],
-                default     => $opts->{"default_$cname.lacks"},
-                cat_name    => "filtering-for-$cname",
+                default     => $opts->{"default_$fname.lacks"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "is an array/list which does not contain specified value",
             );
         }
-        if ($ctype =~ /^(?:int|float|str)$/) { # XXX all Comparable types
+        if ($ftype =~ /^(?:int|float|str)$/) { # XXX all Comparable types
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.min",
+                name        => "$fname.min",
                 type        => [array => {of=>'str*'}],
-                default     => $opts->{"default_$cname.min"},
-                cat_name    => "filtering-for-$cname",
+                default     => $opts->{"default_$fname.min"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "is greater than or equal to specified value",
@@ -263,10 +263,10 @@ _
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.max",
-                type        => $ctype,
-                default     => $opts->{"default_$cname.max"},
-                cat_name    => "filtering-for-$cname",
+                name        => "$fname.max",
+                type        => $ftype,
+                default     => $opts->{"default_$fname.max"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "is less than or equal to specified value",
@@ -274,10 +274,10 @@ _
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.xmin",
+                name        => "$fname.xmin",
                 type        => [array => {of=>'str*'}],
-                default     => $opts->{"default_$cname.xmin"},
-                cat_name    => "filtering-for-$cname",
+                default     => $opts->{"default_$fname.xmin"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "is greater than specified value",
@@ -285,23 +285,23 @@ _
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.xmax",
-                type        => $ctype,
-                default     => $opts->{"default_$cname.xmax"},
-                cat_name    => "filtering-for-$cname",
+                name        => "$fname.xmax",
+                type        => $ftype,
+                default     => $opts->{"default_$fname.xmax"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "is less than specified value",
             );
         }
-        if ($ctype eq 'str') {
+        if ($ftype eq 'str') {
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.contains",
-                type        => $ctype,
-                default     => $opts->{"default_$cname.contains"},
-                cat_name    => "filtering-for-$cname",
+                name        => "$fname.contains",
+                type        => $ftype,
+                default     => $opts->{"default_$fname.contains"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "contains specified text",
@@ -309,22 +309,22 @@ _
             $self->_add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
-                name        => "$cname.not_contains",
-                type        => $ctype,
-                default     => $opts->{"default_$cname.not_contains"},
-                cat_name    => "filtering-for-$cname",
+                name        => "$fname.not_contains",
+                type        => $ftype,
+                default     => $opts->{"default_$fname.not_contains"},
+                cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
                     "does not contain specified text",
             );
-            if ($cspec->{filterable_regex}) {
+            if ($fspec->{filterable_regex}) {
                 $self->_add_arg(
                     func_meta   => $func_meta,
                     langs       => $langs,
-                    name        => "$cname.matches",
-                    type        => $ctype,
-                    default     => $opts->{"default_$cname.matches"},
-                    cat_name    => "filtering-for-$cname",
+                    name        => "$fname.matches",
+                    type        => $ftype,
+                    default     => $opts->{"default_$fname.matches"},
+                    cat_name    => "filtering-for-$fname",
                     cat_text    => "filtering for [_1]",
                     summary => "Only return records where the '[_1]' field ".
                         "matches specified regular expression pattern",
@@ -332,24 +332,24 @@ _
                 $self->_add_arg(
                     func_meta   => $func_meta,
                     langs       => $langs,
-                    name        => "$cname.not_matches",
-                    type        => $ctype,
-                    default     => $opts->{"default_$cname.not_matches"},
-                    cat_name    => "filtering-for-$cname",
+                    name        => "$fname.not_matches",
+                    type        => $ftype,
+                    default     => $opts->{"default_$fname.not_matches"},
+                    cat_name    => "filtering-for-$fname",
                     cat_text    => "filtering for [_1]",
                     summary => "Only return records where the '[_1]' field " .
                         "does not match specified regular expression",
                 );
             }
         }
-    } # for each cspec
+    } # for each fspec
 
     # custom filters
     my $cff = $opts->{custom_filters} // {};
     while (my ($cfn, $cf) = each %$cff) {
-        $fargs->{$cfn} and return [
+        $func_args->{$cfn} and return [
             400, "Custom filter '$cfn' clashes with another argument"];
-        $fargs->{$cfn} = $cf->{meta};
+        $func_args->{$cfn} = $cf->{meta};
     }
 
     [200, "OK", $func_meta];
@@ -359,12 +359,12 @@ sub __parse_query {
     my ($table_spec, $opts, $func_meta, $args) = @_;
     my $query = {args=>$args};
 
-    my $cspecs = $table_spec->{columns};
-    my @columns = keys %$cspecs;
+    my $fspecs = $table_spec->{fields};
+    my @fields = keys %$fspecs;
 
     my @requested_fields;
     if ($args->{detail}) {
-        @requested_fields = @columns;
+        @requested_fields = @fields;
         $args->{with_field_names} //= 1;
     } elsif ($args->{fields}) {
         @requested_fields = @{ $args->{fields} };
@@ -374,98 +374,98 @@ sub __parse_query {
         $args->{with_field_names} //= 0;
     }
     for (@requested_fields) {
-        return [400, "Unknown field $_"] unless $_ ~~ @columns;
+        return [400, "Unknown field $_"] unless $_ ~~ @fields;
     }
     $query->{requested_fields} = \@requested_fields;
 
     my @filter_fields;
-    my @filters; # ([col, operator, operand...])
+    my @filters; # ([field, operator, operand...])
 
-    for my $c (grep {$cspecs->{$_}{schema}[0] eq 'bool'} @columns) {
-        my $cspec = $cspecs->{$c};
+    for my $f (grep {$fspecs->{$_}{schema}[0] eq 'bool'} @fields) {
+        my $fspec = $fspecs->{$f};
         my $exists;
-        if (defined $args->{"$c.is"}) {
+        if (defined $args->{"$f.is"}) {
             $exists++;
-            push @filters, [$c, "truth", $args->{"$c.is"}];
-        } elsif (defined($args->{$c}) && __is_filter_arg($c, $func_meta)) {
+            push @filters, [$f, "truth", $args->{"$f.is"}];
+        } elsif (defined($args->{$f}) && __is_filter_arg($f, $func_meta)) {
             $exists++;
-            push @filters, [$c, "truth", $args->{$c}];
+            push @filters, [$f, "truth", $args->{$f}];
         }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
+        push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
-    for my $c (grep {$cspecs->{$_}{schema}[0] eq 'array'} @columns) {
+    for my $f (grep {$fspecs->{$_}{schema}[0] eq 'array'} @fields) {
         my $exists;
-        if (defined $args->{"$c.has"}) {
+        if (defined $args->{"$f.has"}) {
             $exists++;
-            push @filters, [$c, "~~", $args->{"$c.has"}];
+            push @filters, [$f, "~~", $args->{"$f.has"}];
         }
-        if (defined $args->{"$c.lacks"}) {
+        if (defined $args->{"$f.lacks"}) {
             $exists++;
-            push @filters, [$c, "!~~", $args->{"$c.lacks"}];
+            push @filters, [$f, "!~~", $args->{"$f.lacks"}];
         }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
+        push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
-    for my $c (grep {$cspecs->{$_}{schema}[0] =~ /^(int|float|str)$/}
-                   @columns) { # XXX all Comparable
+    for my $f (grep {$fspecs->{$_}{schema}[0] =~ /^(int|float|str)$/}
+                   @fields) { # XXX all Comparable
         my $exists;
-        my $cspec = $cspecs->{$c};
-        my $ctype = $cspec->{schema}[0];
-        if (defined $args->{"$c.is"}) {
+        my $fspec = $fspecs->{$f};
+        my $ftype = $fspec->{schema}[0];
+        if (defined $args->{"$f.is"}) {
             $exists++;
             push @filters,
-                [$c, $ctype eq 'str' ? "eq" : "==", $args->{"$c.is"}];
-        } elsif (defined($args->{$c}) && __is_filter_arg($c,  $func_meta)) {
+                [$f, $ftype eq 'str' ? "eq" : "==", $args->{"$f.is"}];
+        } elsif (defined($args->{$f}) && __is_filter_arg($f,  $func_meta)) {
             $exists++;
-            push @filters, [$c, $ctype eq 'str' ? "eq":"==", $args->{$c}];
+            push @filters, [$f, $ftype eq 'str' ? "eq":"==", $args->{$f}];
         }
-        if (defined $args->{"$c.isnt"}) {
+        if (defined $args->{"$f.isnt"}) {
             $exists++;
             push @filters,
-                [$c, $ctype eq 'str' ? "ne" : "!=", $args->{"$c.isnt"}];
-        } elsif (defined($args->{$c}) && __is_filter_arg($c,  $func_meta)) {
+                [$f, $ftype eq 'str' ? "ne" : "!=", $args->{"$f.isnt"}];
+        } elsif (defined($args->{$f}) && __is_filter_arg($f,  $func_meta)) {
             $exists++;
-            push @filters, [$c, $ctype eq 'str' ? "eq":"==", $args->{$c}];
+            push @filters, [$f, $ftype eq 'str' ? "eq":"==", $args->{$f}];
         }
-        if (defined $args->{"$c.min"}) {
+        if (defined $args->{"$f.min"}) {
             $exists++;
-            push @filters, [$c, $ctype eq 'str' ? 'ge':'>=', $args->{"$c.min"}];
+            push @filters, [$f, $ftype eq 'str' ? 'ge':'>=', $args->{"$f.min"}];
         }
-        if (defined $args->{"$c.max"}) {
+        if (defined $args->{"$f.max"}) {
             $exists++;
-            push @filters, [$c, $ctype eq 'str' ? 'le':'<=', $args->{"$c.max"}];
+            push @filters, [$f, $ftype eq 'str' ? 'le':'<=', $args->{"$f.max"}];
         }
-        if (defined $args->{"$c.xmin"}) {
+        if (defined $args->{"$f.xmin"}) {
             $exists++;
-            push @filters, [$c, $ctype eq 'str' ? 'gt':'>', $args->{"$c.xmin"}];
+            push @filters, [$f, $ftype eq 'str' ? 'gt':'>', $args->{"$f.xmin"}];
         }
-        if (defined $args->{"$c.xmax"}) {
+        if (defined $args->{"$f.xmax"}) {
             $exists++;
-            push @filters, [$c, $ctype eq 'str' ? 'lt':'<', $args->{"$c.xmax"}];
+            push @filters, [$f, $ftype eq 'str' ? 'lt':'<', $args->{"$f.xmax"}];
         }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
+        push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
-    for my $c (grep {$cspecs->{$_}{schema}[0] =~ /^str$/} @columns) {
+    for my $f (grep {$fspecs->{$_}{schema}[0] =~ /^str$/} @fields) {
         my $exists;
-        if (defined $args->{"$c.contains"}) {
+        if (defined $args->{"$f.contains"}) {
             $exists++;
-            push @filters, [$c, 'pos', $args->{"$c.contains"}];
+            push @filters, [$f, 'pos', $args->{"$f.contains"}];
         }
-        if (defined $args->{"$c.not_contains"}) {
+        if (defined $args->{"$f.not_contains"}) {
             $exists++;
-            push @filters, [$c, '!pos', $args->{"$c.not_contains"}];
+            push @filters, [$f, '!pos', $args->{"$f.not_contains"}];
         }
-        if (defined $args->{"$c.matches"}) {
+        if (defined $args->{"$f.matches"}) {
             $exists++;
-            push @filters, [$c, '=~', $args->{"$c.matches"}];
+            push @filters, [$f, '=~', $args->{"$f.matches"}];
         }
-        if (defined $args->{"$c.not_matches"}) {
+        if (defined $args->{"$f.not_matches"}) {
             $exists++;
-            push @filters, [$c, '!~', $args->{"$c.not_matches"}];
+            push @filters, [$f, '!~', $args->{"$f.not_matches"}];
         }
-        push @filter_fields, $c if $exists && !($c ~~ @filter_fields);
+        push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
     $query->{filters}       = \@filters;
     $query->{filter_fields} = \@filter_fields;
@@ -473,15 +473,15 @@ sub __parse_query {
     my $cff = $opts->{custom_filters} // {};
     while (my ($cfn, $cf) = each %$cff) {
         next unless defined $args->{$cfn};
-        push @filters, [$cf->{columns}, 'call', [$cf->{code}, $args->{$cfn}]];
-        for (@{$cf->{columns} // []}) {
+        push @filters, [$cf->{fields}, 'call', [$cf->{code}, $args->{$cfn}]];
+        for (@{$cf->{fields} // []}) {
             push @filter_fields, $_ if !($_ ~~ @filter_fields);
         }
     }
 
     my @searchable_fields = grep {
-        !defined($cspecs->{$_}{searchable}) || $cspecs->{$_}{searchable}
-        } @columns;
+        !defined($fspecs->{$_}{searchable}) || $fspecs->{$_}{searchable}
+        } @fields;
     my $ci = $opts->{case_insensitive_search};
     my $search_opts = {ci => $ci};
     my $search_re;
@@ -498,10 +498,10 @@ sub __parse_query {
     unless ($opts->{custom_search}) {
         $query->{search_fields} = \@searchable_fields;
         $query->{search_str_fields} = [grep {
-            $cspecs->{$_}{schema}[0] =~ /^(str)$/
+            $fspecs->{$_}{schema}[0] =~ /^(str)$/
         } @searchable_fields];
         $query->{search_array_fields} = [grep {
-            $cspecs->{$_}{schema}[0] =~ /^(array)$/
+            $fspecs->{$_}{schema}[0] =~ /^(array)$/
         } @searchable_fields];
         $query->{search_re} = $search_re;
     }
@@ -513,13 +513,13 @@ sub __parse_query {
         for my $f (@f) {
             my $desc = $f =~ s/^-//;
             return [400, "Unknown field in sort: $f"]
-                unless $f ~~ @columns;
-            my $cspec = $cspecs->{$f};
-            my $ctype = $cspec->{schema}[0];
+                unless $f ~~ @fields;
+            my $fspec = $fspecs->{$f};
+            my $ftype = $fspec->{schema}[0];
             return [400, "Field $f is not sortable"]
-                unless !defined($cspec->{sortable}) || $cspec->{sortable};
-            my $op = $ctype =~ /^(int|float)$/ ? '<=>' : 'cmp';
-            #print "ctype=$ctype, op=$op\n";
+                unless !defined($fspec->{sortable}) || $fspec->{sortable};
+            my $op = $ftype =~ /^(int|float)$/ ? '<=>' : 'cmp';
+            #print "ftype=$ftype, op=$op\n";
             push @sorts, [$f, $op, $desc ? -1:1];
             push @sort_fields, $f;
         }
@@ -543,13 +543,13 @@ sub __parse_query {
 sub _gen_func {
     my ($self, $table_spec, $opts, $table_data, $func_meta) = @_;
 
-    my $cspecs = $table_spec->{columns};
-    my $fargs  = $func_meta->{args};
+    my $fspecs = $table_spec->{fields};
+    my $func_args = $func_meta->{args};
     my $func = sub {
         my %args = @_;
 
         # XXX schema
-        while (my ($ak, $av) = each %$fargs) {
+        while (my ($ak, $av) = each %$func_args) {
             if (defined $av->{schema}[1]{default}) {
                 $args{$ak} //= $av->{schema}[1]{default};
             }
@@ -580,7 +580,7 @@ sub _gen_func {
             return [500, "BUG: 'data' key from result is not AoA/AoH".
                         ", please report to administrator"]
                 unless __is_aoa($data) || __is_aoh($data);
-            for (qw/filtered sorted paged columns_selected/) {
+            for (qw/filtered sorted paged fields_selected/) {
                 $metadata->{$_} = $res->{$_};
             }
         } else {
@@ -589,64 +589,64 @@ sub _gen_func {
         }
 
         # this will be the final result.
-        my @rows;
+        my @r;
 
-        no warnings; # silence undef warnings when comparing row values
+        no warnings; # silence undef warnings when comparing record values
 
         $log->tracef("(read_table_func) Filtering ...");
         my $q = $query->{q};
         my $search_re = $query->{search_re};
 
-      ROW:
-        for my $row0 (@$data) {
-            my $row_h;
-            if (ref($row0) eq 'ARRAY') {
-                # currently, internally we always use hashref for rows and
+      REC:
+        for my $r0 (@$data) {
+            my $r_h;
+            if (ref($r0) eq 'ARRAY') {
+                # currently, internally we always use hashref for records and
                 # convert to array/scalar later when returning final data.
-                $row_h = {};
-                for my $c (keys %$cspecs) {
-                    $row_h->{$c} = $row0->[$cspecs->{$c}{index}];
+                $r_h = {};
+                for my $f (keys %$fspecs) {
+                    $r_h->{$f} = $r0->[$fspecs->{$f}{index}];
                 }
-            } elsif (ref($row0) eq 'HASH') {
-                $row_h = { %$row0 };
+            } elsif (ref($r0) eq 'HASH') {
+                $r_h = { %$r0 };
             } else {
-                return [500, "BUG: Invalid row, not a hash/array"];
+                return [500, "BUG: Invalid record, not a hash/array"];
             }
 
             goto SKIP_FILTER if $metadata->{filtered};
 
-            for my $f (@{$query->{filters}}) {
-                my ($c, $op, $opn) = @$f;
+            for my $filter (@{$query->{filters}}) {
+                my ($f, $op, $opn) = @$filter;
                 if ($op eq 'truth') {
-                    next ROW if $row_h->{$c} xor $opn;
+                    next REC if $r_h->{$f} xor $opn;
                 } elsif ($op eq '~~') {
                     for (@$opn) {
-                        next ROW unless $_ ~~ @{$row_h->{$c}};
+                        next REC unless $_ ~~ @{$r_h->{$f}};
                     }
                 } elsif ($op eq '!~~') {
                     for (@$opn) {
-                        next ROW if $_ ~~ @{$row_h->{$c}};
+                        next REC if $_ ~~ @{$r_h->{$f}};
                     }
-                } elsif ($op eq 'eq') { next ROW unless $row_h->{$c} eq $opn
-                } elsif ($op eq '==') { next ROW unless $row_h->{$c} == $opn
-                } elsif ($op eq 'ne') { next ROW unless $row_h->{$c} ne $opn
-                } elsif ($op eq '!=') { next ROW unless $row_h->{$c} != $opn
-                } elsif ($op eq 'ge') { next ROW unless $row_h->{$c} ge $opn
-                } elsif ($op eq '>=') { next ROW unless $row_h->{$c} >= $opn
-                } elsif ($op eq 'gt') { next ROW unless $row_h->{$c} gt $opn
-                } elsif ($op eq '>' ) { next ROW unless $row_h->{$c} >  $opn
-                } elsif ($op eq 'le') { next ROW unless $row_h->{$c} le $opn
-                } elsif ($op eq '<=') { next ROW unless $row_h->{$c} <= $opn
-                } elsif ($op eq 'lt') { next ROW unless $row_h->{$c} lt $opn
-                } elsif ($op eq '<' ) { next ROW unless $row_h->{$c} <  $opn
-                } elsif ($op eq '=~') { next ROW unless $row_h->{$c} =~ $opn
-                } elsif ($op eq '!~') { next ROW unless $row_h->{$c} !~ $opn
+                } elsif ($op eq 'eq') { next REC unless $r_h->{$f} eq $opn
+                } elsif ($op eq '==') { next REC unless $r_h->{$f} == $opn
+                } elsif ($op eq 'ne') { next REC unless $r_h->{$f} ne $opn
+                } elsif ($op eq '!=') { next REC unless $r_h->{$f} != $opn
+                } elsif ($op eq 'ge') { next REC unless $r_h->{$f} ge $opn
+                } elsif ($op eq '>=') { next REC unless $r_h->{$f} >= $opn
+                } elsif ($op eq 'gt') { next REC unless $r_h->{$f} gt $opn
+                } elsif ($op eq '>' ) { next REC unless $r_h->{$f} >  $opn
+                } elsif ($op eq 'le') { next REC unless $r_h->{$f} le $opn
+                } elsif ($op eq '<=') { next REC unless $r_h->{$f} <= $opn
+                } elsif ($op eq 'lt') { next REC unless $r_h->{$f} lt $opn
+                } elsif ($op eq '<' ) { next REC unless $r_h->{$f} <  $opn
+                } elsif ($op eq '=~') { next REC unless $r_h->{$f} =~ $opn
+                } elsif ($op eq '!~') { next REC unless $r_h->{$f} !~ $opn
                 } elsif ($op eq 'pos') {
-                    next ROW unless index($row_h->{$c}, $opn) >= 0;
+                    next REC unless index($r_h->{$f}, $opn) >= 0;
                 } elsif ($op eq '!pos') {
-                    next ROW if index($row_h->{$c}, $opn) >= 0;
+                    next REC if index($r_h->{$f}, $opn) >= 0;
                 } elsif ($op eq 'call') {
-                    next ROW unless $opn->[0]->($row_h, $opn->[1]);
+                    next REC unless $opn->[0]->($r_h, $opn->[1]);
                 } else {
                     die "BUG: Unknown op $op";
                 }
@@ -654,39 +654,39 @@ sub _gen_func {
 
             if (defined $q) {
                 if ($opts->{custom_search}) {
-                    next ROW unless $opts->{custom_search}->(
-                        $row_h, $q, $query->{search_opts});
+                    next REC unless $opts->{custom_search}->(
+                        $r_h, $q, $query->{search_opts});
                 } else {
                     my $match;
                     for my $f (@{$query->{search_str_fields}}) {
-                        if ($row_h->{$f} =~ $search_re) {
+                        if ($r_h->{$f} =~ $search_re) {
                             $match++; last;
                         }
                     }
                   ARY_FIELD:
                     for my $f (@{$query->{search_array_fields}}) {
-                        for my $el (@{$row_h->{$f}}) {
+                        for my $el (@{$r_h->{$f}}) {
                             if ($el =~ $search_re) {
                                 $match++; last ARY_FIELD;
                             }
                         }
                     }
-                    next ROW unless $match;
+                    next REC unless $match;
                 }
             }
 
           SKIP_FILTER:
 
-            push @rows, $row_h;
+            push @r, $r_h;
         }
 
         $log->tracef("(read_table_func) Ordering ...");
         if ($metadata->{sorted}) {
             # do nothing
         } elsif ($query->{random}) {
-            @rows = shuffle @rows;
+            @r = shuffle @r;
         } elsif (@{$query->{sorts}}) {
-            @rows = sort {
+            @r = sort {
                 for my $s (@{$query->{sorts}}) {
                     my ($f, $op, $desc) = @$s;
                     my $x;
@@ -700,7 +700,7 @@ sub _gen_func {
 
                 }
                 0;
-            } @rows;
+            } @r;
         }
 
         use warnings;
@@ -709,37 +709,37 @@ sub _gen_func {
         $log->tracef("(read_table_func) Paging ...");
         unless ($metadata->{paged}) {
             if ($query->{result_start} > 1) {
-                splice @rows, 0, $query->{result_start}-1;
+                splice @r, 0, $query->{result_start}-1;
             }
             if (defined $query->{result_limit}) {
-                splice @rows, $query->{result_limit};
+                splice @r, $query->{result_limit};
             }
         }
 
         # select fields
         $log->tracef("(read_table_func) Selecting fields ...");
         my $pk = $table_spec->{pk};
-        goto SKIP_SELECT_COLUMNS if $metadata->{columns_selected};
-      ROW2:
-        for my $row (@rows) {
+        goto SKIP_SELECT_FIELDS if $metadata->{fields_selected};
+      REC2:
+        for my $r (@r) {
             if (!$args{detail} && !$args{fields}) {
-                $row = $row->{$pk};
-                next ROW2;
+                $r = $r->{$pk};
+                next REC2;
             }
             if ($args{with_field_names}) {
-                my @columns = keys %$cspecs;
-                for (@columns) {
-                    delete $row->{$_}
+                my @f = keys %$fspecs;
+                for (@f) {
+                    delete $r->{$_}
                         unless $_ ~~ @{$query->{requested_fields}};
                 }
             } else {
-                $row = [map {$row->{$_}} @{$query->{requested_fields}}];
+                $r = [map {$r->{$_}} @{$query->{requested_fields}}];
             }
         }
-      SKIP_SELECT_COLUMNS:
+      SKIP_SELECT_FIELDS:
 
         # return data
-        [200, "OK", \@rows];
+        [200, "OK", \@r];
     };
 
     [200, "OK", $func];
@@ -760,30 +760,35 @@ arguments.
 
 * *with_field_names* => BOOL (default 1)
 
-  By default function will return each record as arrays (e.g. ['ID',
-  'Indonesia', 'Jakarta']. AoH. If this argument is set to 0, then function will
-  return AoA instead.
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
 
 * *detail* => BOOL (default 0)
 
-  This is a field selection option. By default, function will return PK column
-  only. If this argument is set to true, then all columns will be returned.
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  *fields* to instruct function to return some fields only).
 
 * *fields* => ARRAY
 
   This is a field selection option. If you only want certain fields, specify
-  them here.
+  them here (see also *detail*).
 
 * *result_limit* => INT (default undef)
 
 * *result_start* => INT (default 1)
 
   The *result_limit* and *result_start* arguments are paging options, they work
-  like LIMIT clause in SQL, except that index starts at 1 and not 0.
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set *result_limit* to
+  20. To return the next 20 records, set *result_limit* to 20 and *result_start*
+  to 21.
 
 * *random* => BOOL (default 0)
 
-  The random argument is an ordering option. If set to true, order of rows
+  The random argument is an ordering option. If set to true, order of records
   returned will be shuffled first. This happened before paging.
 
 * *sort* => STR
@@ -801,7 +806,7 @@ arguments.
 
 * Filter arguments
 
-  They will be generated for each column, except when column has 'filterable'
+  They will be generated for each field, except when field has 'filterable'
   clause set to false.
 
   Undef values will not match any filter, just like NULL in SQL.
@@ -825,7 +830,7 @@ arguments.
   + *FIELD.matches* and *FIELD.not_matches* for each str field. Only records
     with field matching (or not matching) certain value (regex) (or will be
     included. Function will return 400 if regex is invalid. These arguments will
-    not be generated if 'filterable_regex' clause in column specification is set
+    not be generated if 'filterable_regex' clause in field specification is set
     to 0.
 
 _
@@ -842,11 +847,11 @@ below).
 Passing a subroutine lets you fetch data dynamically and from arbitrary source
 (e.g. DBI table or other external sources). The subroutine will be called with
 these arguments ('$query') and is expected to return a hashref like this {data
-=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, columns_selected=>BOOL,
+=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL,
 randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is assumed to
 be already paged and won't be paged again; likewise for filtered, sorted, and
-columns selected. These are useful for example with DBI result, where requested
-data is already filtered/sorted/column selected/paged/randomized via appropriate
+fields selected. These are useful for example with DBI result, where requested
+data is already filtered/sorted/field selected/paged/randomized via appropriate
 SQL query. This way, the generated function will not attempt to duplicate the
 efforts.
 
@@ -866,17 +871,16 @@ _
             summary => 'Table specification',
             description => <<'_',
 
-A hashref with these required keys: 'columns', 'pk'. 'Columns' is a hashref of
-column specification with column name as keys, while 'pk' specifies which column
-is to be designated as the primary key. Currently only single-column PK is
-allowed.
+A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
+field specification with field name as keys, while 'pk' specifies which field is
+to be designated as the primary key. Currently only single-field PK is allowed.
 
-Column specification. A hashref with these required keys: 'schema' (a Sah
-schema), 'index' (an integer starting from 0 that specifies position of column
-in the data, especially required with AoA data) and these optional clauses:
-'sortable' (a boolean stating whether column can be sorted, default is true),
-'filterable' (a boolean stating whether column can be mentioned in filter
-options, default is true).
+Field specification. A hashref with these required keys: 'schema' (a Sah
+schema), 'index' (an integer starting from 0 that specifies position of field in
+the record, required with AoA data) and these optional clauses: 'sortable' (a
+boolean stating whether field can be sorted, default is true), 'filterable' (a
+boolean stating whether field can be mentioned in filter options, default is
+true).
 
 _
         },
@@ -947,7 +951,7 @@ _
                 "word searching instead of string searching",
             description => <<'_',
 
-For example, if search term is 'pine' and column value is 'green pineapple',
+For example, if search term is 'pine' and field value is 'green pineapple',
 search will match if word_search=false, but won't match under word_search.
 
 This will not have effect under 'custom_search'.
@@ -978,9 +982,9 @@ _
             summary => 'Supply custom searching for generated function',
             description => <<'_',
 
-Code will be supplied ($row, $q, $opts) where $q is the search term (from the
-function argument 'q') and $row the hashref row value. $opts is {ci=>0|1}. Code
-should return true if row matches search term.
+Code will be supplied ($r, $q, $opts) where $r is the record (hashref), $q is
+the search term (from the function argument 'q'), and $opts is {ci=>0|1}. Code
+should return true if record matches search term.
 
 _
         },
@@ -993,12 +997,12 @@ _
 A hash of filter name and definitions. Filter name will be used as generated
 function's argument and must not clash with other arguments. Filter definition
 is a hash containing these keys: *meta* (hash, argument metadata), *code*,
-*columns* (array, list of table columns related to this field).
+*fields* (array, list of table fields related to this field).
 
-Code will be called for each row to be filtered and will be supplied ($row, $v,
-$opts) where $v is the filter value (from the function argument) and $row the
-hashref row value. $opts is currently empty. Code should return true if row
-satisfies the filter.
+Code will be called for each record to be filtered and will be supplied ($r, $v,
+$opts) where $v is the filter value (from the function argument) and $r the
+hashref record value. $opts is currently empty. Code should return true if
+record satisfies the filter.
 
 _
         },
@@ -1023,20 +1027,20 @@ sub _gen_read_table_func {
         or return [400, "Please specify table_spec"];
     ref($table_spec) eq 'HASH'
         or return [400, "Invalid table_spec: must be a hash"];
-    $table_spec->{columns} or
-        return [400, "Invalid table_spec: columns not specified"];
-    ref($table_spec->{columns}) eq 'HASH' or
-        return [400, "Invalid table_spec: columns must be hash"];
+    $table_spec->{fields} or
+        return [400, "Invalid table_spec: fields not specified"];
+    ref($table_spec->{fields}) eq 'HASH' or
+        return [400, "Invalid table_spec: fields must be hash"];
     $table_spec->{pk} or
         return [400, "Invalid table_spec: pk not specified"];
-    exists($table_spec->{columns}{ $table_spec->{pk} }) or
-        return [400, "Invalid table_spec: pk not in columns"];
+    exists($table_spec->{fields}{ $table_spec->{pk} }) or
+        return [400, "Invalid table_spec: pk not in fields"];
 
-    # duplicate and make each column's schema normalized
+    # duplicate and make each field's schema normalized
     $table_spec = clone($table_spec);
-    for my $cspec (values %{$table_spec->{columns}}) {
-        $cspec->{schema} //= 'any';
-        $cspec->{schema} = __parse_schema($cspec->{schema});
+    for my $fspec (values %{$table_spec->{fields}}) {
+        $fspec->{schema} //= 'any';
+        $fspec->{schema} = __parse_schema($fspec->{schema});
     }
     #  make each custom filter's schema normalized
     my $cff = $args{custom_filters} // {};
@@ -1103,7 +1107,7 @@ In list_countries.pl:
      table_data => $countries,
      table_spec => {
          summary => 'List of countries',
-         columns => {
+         fields => {
              id => {
                  schema => 'str*',
                  summary => 'ISO 2-letter code for the country',
@@ -1140,7 +1144,7 @@ In list_countries.pl:
 
 Now you can do:
 
- # list all countries, by default only PK column is shown
+ # list all countries, by default only PK field is shown
  $ list_countries.pl --nopretty
  cn
  id
@@ -1151,8 +1155,8 @@ Now you can do:
  $ list_countries.pl --json --random
  ["id","us","sg","cn"]
 
- # only list countries which are tagged as 'tropical', sort by id_name column in
- # descending order, show all columns (--detail)
+ # only list countries which are tagged as 'tropical', sort by id_name field in
+ # descending order, show all fields (--detail)
  $ list_countries.pl --detail --sort -id_name --tags-has '[tropical]'
  .---------------------------------------------.
  | en_name   | id | id_name   | tags           |
@@ -1161,7 +1165,7 @@ Now you can do:
  | Indonesia | id | Indonesia | bali, tropical |
  '-----------+----+-----------+----------------'
 
- # show only certain fields, limit number of rows, return in YAML format
+ # show only certain fields, limit number of records, return in YAML format
  $ list_countries.pl --fields '[id, en_name]' --result-limit 2 --yaml
  ---
  - id: cn

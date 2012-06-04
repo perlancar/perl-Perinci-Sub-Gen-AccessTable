@@ -14,10 +14,10 @@ require "testlib.pl";
 my ($table_data, $table_spec) = gen_test_data();
 
 test_gen(
-    name => 'pk must be in columns',
+    name => 'pk must be in fields',
     table_data => [],
     table_spec => {
-        columns => {
+        fields => {
             a => {schema=>'int*', index=>0, },
         },
         pk => 'b',
@@ -29,7 +29,7 @@ test_gen(
     name => 'pk must exist in table_spec',
     table_data => [],
     table_spec => {
-        columns => {
+        fields => {
             a => {schema=>'int*', index=>0, },
         },
     },
@@ -37,7 +37,7 @@ test_gen(
 );
 
 test_gen(
-    name => 'columns must exist in table_spec',
+    name => 'fields must exist in table_spec',
     table_data => [],
     table_spec => {
     },
@@ -45,10 +45,10 @@ test_gen(
 );
 
 test_gen(
-    name => 'fields in sort must exist in columns',
+    name => 'fields in sort must exist in fields',
     table_data => [],
     table_spec => {
-        columns => {
+        fields => {
             a => {schema=>'int*', index=>0, },
         },
     },

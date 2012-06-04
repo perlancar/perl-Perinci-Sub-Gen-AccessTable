@@ -67,16 +67,16 @@ sub gen_test_data {
         {s=>'a2', s2=>'', s3=>'a' , i=>-3, f=>1.2, a=>[qw/t1/]   , b=>1},
     ];
     if ($aoa_data) {
-        for my $row (@$table_data) {
-            $row = [
-                $row->{s}, $row->{s2}, $row->{s3},
-                $row->{i}, $row->{f},  $row->{a},  $row->{b},
+        for my $r (@$table_data) {
+            $r = [
+                $r->{s}, $r->{s2}, $r->{s3},
+                $r->{i}, $r->{f},  $r->{a},  $r->{b},
             ];
         }
     }
 
     my $table_spec = {
-        columns => {
+        fields => {
             s  => {schema=>'str*'   , index=>0, filterable_regex=>1, },
             s2 => {schema=>'str*'   , index=>1, filterable=>0, },
             s3 => {schema=>'str*'   , index=>2, },
