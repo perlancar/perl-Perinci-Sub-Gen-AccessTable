@@ -1,5 +1,15 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.11     2012-06-04
+
+         [INCOMPATIBLE CHANGES]
+
+         - Make terminology consistent (column -> field, row -> record). This
+           means table spec's 'columns' is now 'fields'. Subroutine table data
+           is expected to return 'fields_selected' instead of
+           'columns_selected'. Sorry for this.
+
+
 0.10     2012-03-23
 
          [FIXES]
