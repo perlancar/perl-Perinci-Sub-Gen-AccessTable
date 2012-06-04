@@ -97,7 +97,8 @@ sub _gen_meta {
 
     my $func_meta = {
         v => 1.1,
-        summary => "REPLACE ME",
+        summary => $opts->{summary} // $table_spec->{summary} // "REPLACE ME",
+        description => "REPLACE ME",
         args => {},
     };
     my $func_args = $func_meta->{args};
@@ -835,6 +836,14 @@ arguments.
 
 _
     args => {
+        summary => {
+            summary => "Generated function's summary",
+            schema => 'str*',
+        },
+        description => {
+            summary => "Generated function's description",
+            schema => 'str*',
+        },
         table_data => {
             req => 1,
             schema => 'any*',
@@ -1052,6 +1061,8 @@ sub _gen_read_table_func {
 
     my $dav = $args{default_arg_values} // {};
     my $opts = {
+        summary                    => $args{summary},
+        description                => $args{description},
         langs                      => $args{langs} // ['en_US'],
         default_detail             => $args{default_detail},
         default_with_field_names   => $args{default_with_field_names},
@@ -1104,8 +1115,10 @@ In list_countries.pl:
  ];
 
  my $res = gen_read_table_func(
-     table_data => $countries,
-     table_spec => {
+     summary     => 'func summary',     # opt
+     description => 'func description', # opt
+     table_data  => $countries,
+     table_spec  => {
          summary => 'List of countries',
          fields => {
              id => {
