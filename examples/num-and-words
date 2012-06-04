@@ -8,7 +8,7 @@ use warnings;
 use Lingua::EN::Numbers       qw();
 use Lingua::ID::Nums2Words    qw();
 use Perinci::CmdLine;
-use Perinci::Sub::Gen::ReadTable qw(gen_read_table_func);
+use Perinci::Sub::Gen::AccessTable qw(gen_read_table_func);
 
 our %SPEC;
 
@@ -36,7 +36,7 @@ my $res = gen_read_table_func(
     table_data => $data_sub,
     table_spec => {
         summary => 'Numbers with their English and Indonesian spelling',
-        columns => {
+        fields => {
             i => {
                 schema => 'int*',
                 summary => 'Integer number',
