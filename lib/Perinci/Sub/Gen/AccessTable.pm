@@ -1127,13 +1127,13 @@ In list_countries.pl:
                  index => 0,
                  sortable => 1,
              },
-             en_name => {
+             eng_name => {
                  schema => 'str*',
                  summary => 'English name',
                  index => 1,
                  sortable => 1,
              },
-             id_name => {
+             ind_name => {
                  schema => 'str*',
                  summary => 'Indonesian name',
                  index => 2,
@@ -1158,33 +1158,35 @@ In list_countries.pl:
 Now you can do:
 
  # list all countries, by default only PK field is shown
- $ list_countries.pl --nopretty
+ $ list_countries.pl --format=text-simple
  cn
  id
  sg
  us
 
  # show as json, randomize order
- $ list_countries.pl --json --random
+ $ list_countries.pl --format=json --random
  ["id","us","sg","cn"]
 
- # only list countries which are tagged as 'tropical', sort by id_name field in
+ # only list countries which are tagged as 'tropical', sort by ind_name field in
  # descending order, show all fields (--detail)
- $ list_countries.pl --detail --sort -id_name --tags-has '[tropical]'
+ $ list_countries.pl --detail --sort -ind_name --tags-has '[tropical]'
  .---------------------------------------------.
- | en_name   | id | id_name   | tags           |
+ | eng_name  | id | ind_name  | tags           |
  +-----------+----+-----------+----------------+
  | Singapore | sg | Singapura | tropical       |
  | Indonesia | id | Indonesia | bali, tropical |
  '-----------+----+-----------+----------------'
 
  # show only certain fields, limit number of records, return in YAML format
- $ list_countries.pl --fields '[id, en_name]' --result-limit 2 --yaml
- ---
- - id: cn
-   en_name: China
- - id: id
-   en_name: Indonesia
+ $ list_countries.pl --fields '[id, eng_name]' --result-limit 2 --format=yaml
+ - 200
+ - OK
+ -
+   - id: cn
+     eng_name: China
+   - id: id
+     eng_name: Indonesia
 
 
 =head1 DESCRIPTION
@@ -1197,7 +1199,6 @@ metadata. The resulting function can then be run via command-line using
 L<Perinci::CmdLine> (as demonstrated in Synopsis), or served via HTTP using
 L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
 
-Internally, the
 This module uses L<Log::Any> for logging.
 
 
