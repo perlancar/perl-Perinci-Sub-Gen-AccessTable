@@ -856,12 +856,12 @@ below).
 Passing a subroutine lets you fetch data dynamically and from arbitrary source
 (e.g. DBI table or other external sources). The subroutine will be called with
 these arguments ('$query') and is expected to return a hashref like this {data
-=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL,
-randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is assumed to
-be already paged and won't be paged again; likewise for filtered, sorted, and
-fields selected. These are useful for example with DBI result, where requested
-data is already filtered/sorted/field selected/paged/randomized via appropriate
-SQL query. This way, the generated function will not attempt to duplicate the
+=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL}. DATA
+is AoA or AoH. If paged is set to 1, data is assumed to be already paged and
+won't be paged again; likewise for filtered, sorted, and fields selected. These
+are useful for example with DBI result, where requested data is already
+filtered/sorted (including randomized)/field selected/paged via appropriate SQL
+query. This way, the generated function will not attempt to duplicate the
 efforts.
 
 '$query' is a hashref which contains information about the query, e.g. 'args'
