@@ -1,5 +1,7 @@
 package Perinci::Sub::Gen::common;
 
+# VERSION
+
 our %common_args = (
     name => {
         summary => "Generated function's name, e.g. `myfunc`",
