@@ -1025,7 +1025,7 @@ sub _gen_read_table_func {
     my ($uqname, $package);
     my $fqname = $args{name};
     return [400, "Please specify name"] unless $fqname;
-    my @caller = caller;
+    my @caller = caller(1);
     if ($fqname =~ /(.+)::(.+)/) {
         $package = $1;
         $uqname  = $2;
@@ -1097,6 +1097,7 @@ sub _gen_read_table_func {
 
     if ($args{install} // 1) {
         no strict 'refs';
+        #$log->tracef("Installing function as %s ...", $fqname);
         *{ $fqname } = $func;
         ${$package . "::SPEC"}{$uqname} = $func_meta;
     }
