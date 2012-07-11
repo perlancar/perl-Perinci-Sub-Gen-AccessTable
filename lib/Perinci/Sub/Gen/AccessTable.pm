@@ -9,6 +9,7 @@ use Moo; # we go OO just for the I18N, we don't store attributes, etc
 use Data::Clone;
 use Data::Sah;
 use List::Util qw(shuffle);
+use Perinci::Sub::Gen::common;
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
 use Exporter;
@@ -836,14 +837,7 @@ arguments.
 
 _
     args => {
-        summary => {
-            summary => "Generated function's summary",
-            schema => 'str*',
-        },
-        description => {
-            summary => "Generated function's description",
-            schema => 'str*',
-        },
+        %Perinci::Sub::Gen::common::common_args,
         table_data => {
             req => 1,
             schema => 'any*',
@@ -1028,6 +1022,18 @@ sub _gen_read_table_func {
     my ($self, %args) = @_;
 
     # XXX schema
+    my ($uqname, $package);
+    my $fqname = $args{name};
+    return [400, "Please specify name"] unless $fqname;
+    my @caller = caller;
+    if ($fqname =~ /(.+)::(.+)/) {
+        $package = $1;
+        $uqname  = $2;
+    } else {
+        $package = $args{package} // $caller[0];
+        $uqname  = $fqname;
+        $fqname  = "$package\::$uqname";
+    }
     my $table_data = $args{table_data}
         or return [400, "Please specify table_data"];
     __is_aoa($table_data) or __is_aoh($table_data) or ref($table_data) eq 'CODE'
@@ -1088,6 +1094,12 @@ sub _gen_read_table_func {
     return [$res->[0], "Can't generate func: $res->[1]"]
         unless $res->[0] == 200;
     my $func = $res->[2];
+
+    if ($args{install} // 1) {
+        no strict 'refs';
+        *{ $fqname } = $func;
+        ${$package . "::SPEC"}{$uqname} = $func_meta;
+    }
 
     [200, "OK", {meta=>$func_meta, code=>$func}];
 }

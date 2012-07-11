@@ -12,6 +12,8 @@ sub test_gen {
     subtest $args{name} => sub {
         my $res;
         my %fargs = (
+            name       => 'foo',
+            install    => $args{install} // 0,
             table_data => $args{table_data},
             table_spec => $args{table_spec},
         );
