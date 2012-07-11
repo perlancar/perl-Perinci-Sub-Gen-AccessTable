@@ -1,5 +1,17 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.13     2012-07-11
+
+         [INCOMPATIBLE CHANGES]
+
+         - Now argument 'name' is required.
+
+         [ENHANCEMENTS]
+
+         - Add arguments 'name', 'package', and 'install'. Now installs
+           generated function for you by default.
+
+
 0.12     2012-06-04
 
          [ENHANCEMENTS]
