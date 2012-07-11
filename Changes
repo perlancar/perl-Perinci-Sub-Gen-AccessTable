@@ -1,6 +1,13 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
-0.13     2012-07-11
+0.14     2012-07-11 (SHARYANTO)
+
+         [BUG FIXES]
+
+         - Fix setting default (caller) package.
+
+
+0.13     2012-07-11 (SHARYANTO)
 
          [INCOMPATIBLE CHANGES]
 
@@ -12,7 +19,7 @@ Revision history for Perinci-Sub-Gen-AccessTable
            generated function for you by default.
 
 
-0.12     2012-06-04
+0.12     2012-06-04 (SHARYANTO)
 
          [ENHANCEMENTS]
 
@@ -20,7 +27,7 @@ Revision history for Perinci-Sub-Gen-AccessTable
            metadata.
 
 
-0.11     2012-06-04
+0.11     2012-06-04 (SHARYANTO)
 
          [INCOMPATIBLE CHANGES]
 
@@ -30,7 +37,7 @@ Revision history for Perinci-Sub-Gen-AccessTable
            'columns_selected'. Sorry for this.
 
 
-0.10     2012-03-23
+0.10     2012-03-23 (SHARYANTO)
 
          [FIXES]
 
@@ -41,7 +48,7 @@ Revision history for Perinci-Sub-Gen-AccessTable
          - --fields now does not automatically enables --with-field-names
 
 
-0.09     2012-03-22
+0.09     2012-03-22 (SHARYANTO)
 
          [ENHANCEMENTS]
 
@@ -51,14 +58,14 @@ Revision history for Perinci-Sub-Gen-AccessTable
          - Add 'custom_filters'.
 
 
-0.08     2012-03-22
+0.08     2012-03-22 (SHARYANTO)
 
          - Fixes for English translation.
 
          - build: Tweak dependency.
 
 
-0.07     2012-03-22
+0.07     2012-03-22 (SHARYANTO)
 
          Rename distribution from Sub-Spec-Gen-ReadTable to
          Perinci-Sub-Gen-AccessTable.
@@ -81,17 +88,17 @@ Revision history for Perinci-Sub-Gen-AccessTable
          - Add some filter arguments: xmin, xmax.
 
 
-0.06     2012-01-20
+0.06     2012-01-20 (SHARYANTO)
 
          No functional changes. Mark deprecation.
 
 
-0.05     2011-11-23
+0.05     2011-11-23 (SHARYANTO)
 
          No functional changes. Replace Data::Sah::Util with Data::Sah.
 
 
-0.04     2011-10-19
+0.04     2011-10-19 (SHARYANTO)
 
          [INCOMPATIBLE CHANGES, ENHANCEMENTS]
 
@@ -101,13 +108,13 @@ Revision history for Perinci-Sub-Gen-AccessTable
          and/or paged (paged=>1) for efficiency.
 
 
-0.03     2011-08-31
+0.03     2011-08-31 (SHARYANTO)
 
          No functional changes. Updated because _parse_schema() is moved from
          Sub::Spec::Utils to Data::Sah::Util.
 
 
-0.02     2011-06-13
+0.02     2011-06-13 (SHARYANTO)
 
          [ENHANCEMENTS]
 
@@ -119,6 +126,6 @@ Revision history for Perinci-Sub-Gen-AccessTable
          - Provide search data (search_fields, search_re) in query.
 
 
-0.01     2011-06-13
+0.01     2011-06-13 (SHARYANTO)
 
          First release.
