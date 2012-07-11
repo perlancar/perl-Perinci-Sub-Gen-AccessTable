@@ -9,6 +9,7 @@ use Moo; # we go OO just for the I18N, we don't store attributes, etc
 use Data::Clone;
 use Data::Sah;
 use List::Util qw(shuffle);
+use Perinci::Object::Metadata;
 use Perinci::Sub::Gen::common;
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
@@ -90,6 +91,42 @@ sub _add_arg {
     $func_meta->{args}{$arg_name} = $arg_spec;
 }
 
+sub _add_table_desc_to_func_description {
+    my ($self, $func_meta, $table_spec, $opts) = @_;
+    my $langs = $opts->{langs};
+
+    for my $lang (@$langs) {
+        my $td = $self->locl(
+            $lang, "Data is in table form. Table fields are as follow:");
+        $td .= "\n\n";
+        my $ff = $table_spec->{fields};
+        for my $fn (sort {($ff->{$a}{index}//0) <=> ($ff->{$b}{index}//0)}
+                        keys %$ff) {
+            my $f  = $ff->{$fn};
+            my $fo = Perinci::Object::Metadata->new($f);
+            my $sum = $fo->langprop("summary", {lang=>$lang});
+            $td .=
+                join("",
+                     "  - *$fn*",
+                     $table_spec->{pk} eq $fn ?
+                         " (".$self->locl($lang, "ID field").")":"",
+                     $sum ? ": $sum" : "",
+                     "\n\n");
+            my $desc = $fo->langprop("description", {lang=>$lang});
+            if ($desc) {
+                $desc =~ s/^/    /mg;
+                $td .= "$desc\n\n";
+            }
+        }
+
+        my $key = "description" . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
+        $func_meta->{$key} //= "";
+        $func_meta->{$key} .= "\n" unless $func_meta->{$key} =~ /\n\z/;
+        $func_meta->{$key} .= "\n" unless $func_meta->{$key} !~ /\S/;
+        $func_meta->{$key} .= $td;
+    }
+}
+
 sub _gen_meta {
     my ($self, $table_spec, $opts) = @_;
     my $langs = $opts->{langs};
@@ -99,9 +136,12 @@ sub _gen_meta {
     my $func_meta = {
         v => 1.1,
         summary => $opts->{summary} // $table_spec->{summary} // "REPLACE ME",
-        description => "REPLACE ME",
+        description => $opts->{description} // "REPLACE ME",
         args => {},
     };
+
+    $self->_add_table_desc_to_func_description($func_meta, $table_spec, $opts);
+
     my $func_args = $func_meta->{args};
 
     $self->_add_arg(

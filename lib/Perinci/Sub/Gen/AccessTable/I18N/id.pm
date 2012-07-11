@@ -29,6 +29,17 @@ msgstr "halaman"
 msgid  "filtering for %1"
 msgstr "penyaringan untuk %1"
 
+# table structure description
+
+msgid  "Data is in table form. Table fields are as follow:"
+msgstr "Data berbentuk tabel. Field-field tabel adalah sebagai berikut:"
+
+msgid  "field"
+msgstr "field"
+
+msgid  "ID field"
+msgstr "field kunci"
+
 # arg: with_field_names
 
 msgid  "Return field names in each record (as hash/associative array)"

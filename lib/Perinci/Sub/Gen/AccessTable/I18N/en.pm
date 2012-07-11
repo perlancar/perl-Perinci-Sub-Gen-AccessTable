@@ -29,6 +29,17 @@ msgstr "paging"
 msgid  "filtering for %1"
 msgstr "filtering for %1"
 
+# table structure description
+
+msgid  "Data is in table form. Table fields are as follow:"
+msgstr "Data is in table form. Table fields are as follow:"
+
+msgid  "field"
+msgstr "field"
+
+msgid  "ID field"
+msgstr "ID field"
+
 # arg: with_field_names
 
 msgid  "Return field names in each record (as hash/associative array)"
