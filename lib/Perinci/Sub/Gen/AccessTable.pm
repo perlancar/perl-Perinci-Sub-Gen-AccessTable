@@ -11,6 +11,7 @@ use Data::Sah;
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen::common;
+use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
 use Exporter;
@@ -611,7 +612,7 @@ sub _gen_func {
         my $metadata = {};
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
-        } elsif (ref($table_data) eq 'CODE') {
+        } elsif (reftype($table_data) eq 'CODE') {
             my $res;
             return [500, "BUG: Data function died: $@"]
                 unless eval { $res = $table_data->($query) };
@@ -1076,8 +1077,9 @@ sub _gen_read_table_func {
     }
     my $table_data = $args{table_data}
         or return [400, "Please specify table_data"];
-    __is_aoa($table_data) or __is_aoh($table_data) or ref($table_data) eq 'CODE'
-        or return [400, "Invalid table_data: must be AoA or AoH or function"];
+    __is_aoa($table_data) or __is_aoh($table_data) or
+        reftype($table_data) eq 'CODE'
+            or return [400, "Invalid table_data: must be AoA/AoH/function"];
     my $table_spec = $args{table_spec}
         or return [400, "Please specify table_spec"];
     ref($table_spec) eq 'HASH'
