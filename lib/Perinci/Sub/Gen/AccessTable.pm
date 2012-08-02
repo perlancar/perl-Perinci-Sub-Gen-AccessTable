@@ -14,11 +14,9 @@ use Perinci::Sub::Gen::common;
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
-use Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(gen_read_table_func);
-
 with 'SHARYANTO::Role::I18NMany';
+
+use Perinci::Exporter;
 
 # VERSION
 
