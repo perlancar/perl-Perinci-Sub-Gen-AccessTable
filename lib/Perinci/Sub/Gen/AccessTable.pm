@@ -1137,6 +1137,7 @@ sub _gen_read_table_func {
 
     if ($args{install} // 1) {
         no strict 'refs';
+        no warnings;
         #$log->tracef("Installing function as %s ...", $fqname);
         *{ $fqname } = $func;
         ${$package . "::SPEC"}{$uqname} = $func_meta;
