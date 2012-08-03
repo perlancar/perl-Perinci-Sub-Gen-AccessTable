@@ -11,8 +11,9 @@ use Data::Sah;
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen::common;
-use Scalar::Util qw(reftype);
+use Scalar::Util qw(reftype blessed);
 use SHARYANTO::String::Util qw(trim_blank_lines);
+use Sub::Current;
 
 with 'SHARYANTO::Role::I18NMany';
 
@@ -1064,7 +1065,7 @@ sub _gen_read_table_func {
     my ($uqname, $package);
     my $fqname = $args{name};
     return [400, "Please specify name"] unless $fqname;
-    my @caller = caller(1);
+    my @caller = caller(blessed(ROUTINE) ? 2 : 1); # +1 if we're wrapped
     if ($fqname =~ /(.+)::(.+)/) {
         $package = $1;
         $uqname  = $2;
