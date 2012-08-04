@@ -14,7 +14,6 @@ use Perinci::Sub::Gen::common;
 use Perinci::Sub::Wrapper qw(wrapped);
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
-use Sub::Current;
 
 with 'SHARYANTO::Role::I18NMany';
 
@@ -1057,7 +1056,7 @@ sub gen_read_table_func {
 
     my $self = __PACKAGE__->new;
     $self->{_wrapped} = wrapped();
-    #$log->errorf("TMP: wrapped=", $self->{_wrapped});
+    #$log->errorf("TMP: wrapped=%s", $self->{_wrapped});
     $self->_gen_read_table_func(%args);
 }
 
@@ -1068,7 +1067,7 @@ sub _gen_read_table_func {
     my ($uqname, $package);
     my $fqname = $args{name};
     return [400, "Please specify name"] unless $fqname;
-    my @caller = caller($self->{_wrapped} ? 2 : 1); # +1 if we're wrapped
+    my @caller = caller($self->{_wrapped} ? 3 : 1); # +2 if we're wrapped
     if ($fqname =~ /(.+)::(.+)/) {
         $package = $1;
         $uqname  = $2;
