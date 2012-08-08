@@ -11,7 +11,7 @@ use Data::Sah;
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen::common;
-use Perinci::Sub::Wrapper qw(wrapped);
+use Perinci::Sub::Wrapper qw(caller);
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
@@ -1055,8 +1055,6 @@ sub gen_read_table_func {
     my %args = @_;
 
     my $self = __PACKAGE__->new;
-    $self->{_wrapped} = wrapped();
-    #$log->errorf("TMP: wrapped=%s", $self->{_wrapped});
     $self->_gen_read_table_func(%args);
 }
 
@@ -1067,7 +1065,7 @@ sub _gen_read_table_func {
     my ($uqname, $package);
     my $fqname = $args{name};
     return [400, "Please specify name"] unless $fqname;
-    my @caller = caller($self->{_wrapped} ? 3 : 1); # +2 if we're wrapped
+    my @caller = caller(1);
     if ($fqname =~ /(.+)::(.+)/) {
         $package = $1;
         $uqname  = $2;
