@@ -10,7 +10,7 @@ use Data::Clone;
 use Data::Sah;
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
-use Perinci::Sub::Gen::common;
+use Perinci::Sub::Gen;
 use Perinci::Sub::Wrapper qw(caller);
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
@@ -877,7 +877,7 @@ arguments.
 
 _
     args => {
-        %Perinci::Sub::Gen::common::common_args,
+        %Perinci::Sub::Gen::common_args,
         table_data => {
             req => 1,
             schema => 'any*',
