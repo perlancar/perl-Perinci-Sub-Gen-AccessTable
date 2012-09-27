@@ -11,6 +11,7 @@ use Data::Sah;
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
+use Perinci::Sub::Util qw(wrapres);
 use Perinci::Sub::Wrapper qw(caller);
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
@@ -1127,12 +1128,12 @@ sub _gen_read_table_func {
 
     my $res;
     $res = $self->_gen_meta($table_spec, $opts);
-    return [$res->[0], "Can't generate meta: $res->[1]"]
+    return wrapres([undef, "Can't generate meta: "], $res)
         unless $res->[0] == 200;
     my $func_meta = $res->[2];
 
     $res = $self->_gen_func($table_spec, $opts, $table_data, $func_meta);
-    return [$res->[0], "Can't generate func: $res->[1]"]
+    return wrapres([undef, "Can't generate func: "], $res)
         unless $res->[0] == 200;
     my $func = $res->[2];
 
