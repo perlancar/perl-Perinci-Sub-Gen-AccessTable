@@ -6,25 +6,25 @@ use strict;
 use warnings;
 use Moo; # we go OO just for the I18N, we don't store attributes, etc
 
-use Data::Clone;
-use Data::Sah;
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
-use Perinci::Sub::Util qw(wrapres);
-use Perinci::Sub::Wrapper qw(caller);
+use Perinci::Sub::Util qw(wrapres); # caller
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
 with 'SHARYANTO::Role::I18NMany';
 
-use Perinci::Exporter;
+require Exporter;
+our @ISA       = qw(Exporter);
+our @EXPORT_OK = qw(gen_read_table_func);
 
 # VERSION
 
 our %SPEC;
 
 sub __parse_schema {
+    require Data::Sah;
     Data::Sah::normalize_schema($_[0]);
 }
 
@@ -1060,6 +1060,8 @@ sub gen_read_table_func {
 }
 
 sub _gen_read_table_func {
+    require Data::Clone;
+
     my ($self, %args) = @_;
 
     # XXX schema
@@ -1094,7 +1096,7 @@ sub _gen_read_table_func {
         return [400, "Invalid table_spec: pk not in fields"];
 
     # duplicate and make each field's schema normalized
-    $table_spec = clone($table_spec);
+    $table_spec = Data::Clone::clone($table_spec);
     for my $fspec (values %{$table_spec->{fields}}) {
         $fspec->{schema} //= 'any';
         $fspec->{schema} = __parse_schema($fspec->{schema});

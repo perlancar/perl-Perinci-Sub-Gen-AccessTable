@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Log::Any '$log';
 
-use Perinci::Sub::Gen::AccessTable gen_read_table_func => {wrap=>0};
+use Perinci::Sub::Gen::AccessTable qw(gen_read_table_func);
 use Test::More 0.96;
 
 sub test_gen {
