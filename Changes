@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.18     2013-07-04 (SHARYANTO)
+
+         [ENHANCEMENTS]
+
+         - Add hooks to allow generated function to execute other stuffs.
+
+
 0.17     2012-11-02 (SHARYANTO)
 
          No functional changes. Slightly reduce startup overhead by not using

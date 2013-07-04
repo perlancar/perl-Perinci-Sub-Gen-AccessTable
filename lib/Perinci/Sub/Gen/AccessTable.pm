@@ -1,6 +1,6 @@
 package Perinci::Sub::Gen::AccessTable;
 
-use 5.010;
+use 5.010001;
 use Log::Any '$log';
 use strict;
 use warnings;
