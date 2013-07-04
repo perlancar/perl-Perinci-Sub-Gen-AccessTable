@@ -400,5 +400,42 @@ test_gen(
     },
 );
 
+{
+    my $stash = {};
+    my $n = 1;
+    my $hook_code = sub {
+        my %args = @_;
+        $stash->{ $args{_stage} } = $n;
+        $n++;
+    };
+    test_gen(
+        name => 'hooks',
+        table_data => $table_data,
+        table_spec => $table_spec,
+        other_args => {
+            hooks => {
+                before_parse_query => $hook_code,
+                after_parse_query  => $hook_code,
+                before_fetch_data  => $hook_code,
+                after_fetch_data   => $hook_code,
+            },
+        },
+        status => 200,
+        post_test => sub {
+            my ($res) = @_;
+            my $func = $res->[2]{code};
+            test_query($func, {b=>1}, 2, 'test query');
+            is_deeply($stash,
+                      {
+                          before_parse_query => 1,
+                          after_parse_query  => 2,
+                          before_fetch_data  => 3,
+                          after_fetch_data   => 4,
+                      },
+                      'hooks run');
+        },
+    );
+}
+
 DONE_TESTING:
 done_testing();

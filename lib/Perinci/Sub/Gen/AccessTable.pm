@@ -590,6 +590,7 @@ sub _gen_func {
     my $func_args = $func_meta->{args};
     my $func = sub {
         my %args = @_;
+        my $hooks = $opts->{hooks};
 
         # XXX schema
         while (my ($ak, $av) = each %$func_args) {
@@ -603,13 +604,22 @@ sub _gen_func {
             }
         }
 
+        for ('before_parse_query') {
+            $hooks->{$_}->(%args, _stage=>$_) if $hooks->{$_};
+        }
         my $res = __parse_query($table_spec, $opts, $func_meta, \%args);
+        for ('after_parse_query') {
+            $hooks->{$_}->(%args, _stage=>$_, _parse_res=>$res) if $hooks->{$_};
+        }
         return $res unless $res->[0] == 200;
         my $query = $res->[2];
 
         # retrieve data
         my $data;
         my $metadata = {};
+        for ('before_fetch_data') {
+            $hooks->{$_}->(%args, _stage=>$_, _query=>$query) if $hooks->{$_};
+        }
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
         } elsif (reftype($table_data) eq 'CODE') {
@@ -629,6 +639,10 @@ sub _gen_func {
         } else {
             # this should be impossible, already checked earlier
             die "BUG: Data is not an array";
+        }
+        for ('after_fetch_data') {
+            $hooks->{$_}->(%args, _stage=>$_, _query=>$query, _data=>$data)
+                if $hooks->{$_};
         }
 
         # this will be the final result.
@@ -1050,6 +1064,19 @@ record satisfies the filter.
 
 _
         },
+        hooks => {
+            schema      => [hash => {of=>'code*'}],
+            summary     => 'Supply hooks',
+            description => <<'_',
+
+You can instruct the generated function to execute codes in various stages by
+using hooks. Currently available hooks are: `before_parse_query`,
+`after_parse_query`, `before_fetch_data`, `after_fetch_data`. Hooks will be
+passed the function arguments as well as zero or more additional ones,
+including: `_stage` (name of stage).
+
+_
+        },
     },
 };
 sub gen_read_table_func {
@@ -1126,6 +1153,7 @@ sub _gen_read_table_func {
         case_insensitive_search    => $args{case_insensitive_search} // 1,
         (map { ("default_$_" => $dav->{$_}) } keys %$dav),
         custom_filters             => $cff,
+        hooks                      => $args{hooks} // {},
     };
 
     my $res;
