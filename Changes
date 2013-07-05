@@ -1,5 +1,14 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.19     2013-07-05 (SHARYANTO)
+
+         [BUG FIXES]
+
+         - Do not produce circular references between 'VAR' and 'VAR.is'. This
+           prevents Riap clients from fetching the generated function's
+           metadata.
+
+
 0.18     2013-07-04 (SHARYANTO)
 
          [ENHANCEMENTS]
