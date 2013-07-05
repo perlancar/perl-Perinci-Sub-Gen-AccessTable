@@ -265,7 +265,8 @@ _
                 "equals specified value",
         );
         unless ($func_args->{$fname}) {
-            $func_args->{$fname} = $func_args->{"$fname.is"};
+            $func_args->{$fname} =
+                Data::Clone::clone($func_args->{"$fname.is"});
         }
         if ($ftype eq 'array') {
             $self->_add_arg(
