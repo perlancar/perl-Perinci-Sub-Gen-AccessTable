@@ -155,10 +155,14 @@ test_gen(
         # i don't test .is again below, assumed ok.
 
         test_query($f, {i=>4}, 1, 'int filter: F');
+        test_query($f, {"i.in"=>[1,2,4]}, 3, 'int filter: F.in');
+        test_query($f, {"i.not_in"=>[1,2]}, 2, 'int filter: F.not_in');
         test_query($f, {"i.min"=>4}, 1, 'int filter: F.min');
         test_query($f, {"i.max"=>2}, 3, 'int filter: F.max');
 
         test_query($f, {f=>0.2}, 1, 'float filter: F');
+        test_query($f, {"f.in"=>[0.1, 0.2, 1.1]}, 3, 'float filter: F.in');
+        test_query($f, {"f.not_in"=>[1.1, 1.2]}, 2, 'float filter: F.not_in');
         test_query($f, {"f.min"=>0.2}, 3, 'float filter: F.min');
         test_query($f, {"f.max"=>0.2}, 2, 'float filter: F.max');
 
@@ -168,6 +172,8 @@ test_gen(
         test_query($f,{"a.lacks"=>[qw/t1 t2/]},1, 'ary f: F.lacks t1 t2');
 
         test_query($f, {s=>'a1'}, 1, 'str filter: F');
+        test_query($f, {"s.in"=>['a1']}, 1, 'str filter: F.in');
+        test_query($f, {"s.not_in"=>['a1', 'b1']}, 2, 'str filter: F.not_in');
         test_query($f, {"s.min"=>'a2'}, 3, 'str filter: F.min');
         test_query($f, {"s.max"=>'a2'}, 2, 'str filter: F.max');
         test_query($f, {"s.xmin"=>'a2'}, 2, 'str filter: F.xmin');

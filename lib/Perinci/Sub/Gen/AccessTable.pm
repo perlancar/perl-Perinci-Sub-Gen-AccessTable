@@ -5,6 +5,7 @@ use Log::Any '$log';
 use strict;
 use warnings;
 use Moo; # we go OO just for the I18N, we don't store attributes, etc
+use experimental 'smartmatch';
 
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
@@ -268,6 +269,31 @@ _
             $func_args->{$fname} =
                 Data::Clone::clone($func_args->{"$fname.is"});
         }
+        # .in & .not_in should be applicable to arrays to, but it is currently
+        # implemented with perl's ~~ which can't handle this transparently. as
+        # for bool, it's not that important.
+        unless ($ftype ~~ [qw/array bool/]) {
+            $self->_add_arg(
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$fname.in",
+                type        => ['array*' => {of => "$ftype*"}],
+                cat_name    => "filtering-for-$fname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is in the specified values",
+            );
+            $self->_add_arg(
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$fname.not_in",
+                type        => ['array*' => {of => "$ftype*"}],
+                cat_name    => "filtering-for-$fname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is not in the specified values",
+            );
+        }
         if ($ftype eq 'array') {
             $self->_add_arg(
                 func_meta   => $func_meta,
@@ -449,6 +475,18 @@ sub __parse_query {
             push @filters, [$f, "!~~", $args->{"$f.lacks"}];
         }
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
+    }
+
+    for my $f (grep {!($fspecs->{$_}{schema}[0] ~~ ['array','bool'])} @fields) {
+        my $exists;
+        if (defined $args->{"$f.in"}) {
+            $exists++;
+            push @filters, [$f, "in", $args->{"$f.in"}];
+        }
+        if (defined $args->{"$f.not_in"}) {
+            $exists++;
+            push @filters, [$f, "not_in", $args->{"$f.not_in"}];
+        }
     }
 
     for my $f (grep {$fspecs->{$_}{schema}[0] =~ /^(int|float|str)$/}
@@ -685,6 +723,10 @@ sub _gen_func {
                     for (@$opn) {
                         next REC if $_ ~~ @{$r_h->{$f}};
                     }
+                } elsif ($op eq 'in') {
+                    next REC unless $r_h->{$f} ~~ @$opn;
+                } elsif ($op eq 'not_in') {
+                    next REC if $r_h->{$f} ~~ @$opn;
                 } elsif ($op eq 'eq') { next REC unless $r_h->{$f} eq $opn
                 } elsif ($op eq '==') { next REC unless $r_h->{$f} == $opn
                 } elsif ($op eq 'ne') { next REC unless $r_h->{$f} ne $opn

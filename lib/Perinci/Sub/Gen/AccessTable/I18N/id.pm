@@ -107,6 +107,16 @@ msgstr "Cari"
 msgid  "Only return records where the '%1' field equals specified value"
 msgstr "Hanya kembalikan rekord yang field '%1'-nya bernilai tertentu"
 
+# arg: FIELD.in
+
+msgid  "Only return records where the '%1' field is in the specified values"
+msgstr "Hanya kembalikan rekord yang field '%1'-nya salah satu dari nilai-nilai yang disebutkan"
+
+# arg: FIELD.not_in
+
+msgid  "Only return records where the '%1' field is not in the specified values"
+msgstr "Hanya kembalikan rekord yang field '%1'-nya bukan salah satu dari nilai-nilai yang disebutkan"
+
 # arg: FIELD.has
 
 msgid  "Only return records where the '%1' field is an array/list which contains specified value"

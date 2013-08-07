@@ -69,23 +69,24 @@ test_gen(
         for (qw/b b.is/) {
             ok($args->{$_}, "boolean filter arg '$_' generated");
         }
-        for (qw/i i.is i.min i.xmin i.max i.xmax/) {
+        for (qw/i i.is i.in i.not_in i.min i.xmin i.max i.xmax/) {
             ok($args->{$_}, "int filter arg '$_' generated");
         }
-        for (qw/f f.is f.min f.xmin f.max f.xmax/) {
+        for (qw/f f.is f.in f.not_in f.min f.xmin f.max f.xmax/) {
             ok($args->{$_}, "float filter arg '$_' generated");
         }
         for (qw/a a.has a.lacks/) {
             ok($args->{$_}, "array filter arg '$_' generated");
         }
-        for (qw/s s.is s.contains s.not_contains s.matches s.not_matches/) {
+        for (qw/s s.is s.in s.not_in s.contains s.not_contains
+                s.matches s.not_matches/) {
             ok($args->{$_}, "str filter arg '$_' generated");
         }
-        for (qw/s2 s2.is s2.contains s2.not_contains
+        for (qw/s2 s2.is s2.in s2.not_in s2.contains s2.not_contains
                 s2.matches s2.not_matches/) {
             ok(!$args->{$_}, "str filter arg '$_' NOT generated");
         }
-        for (qw/s3 s3.is s3.contains s3.not_contains/) {
+        for (qw/s3 s3.is s3.in s3.not_in s3.contains s3.not_contains/) {
             ok($args->{$_}, "str filter arg '$_' generated");
         }
         for (qw/s3.matches s3.not_matches/) {

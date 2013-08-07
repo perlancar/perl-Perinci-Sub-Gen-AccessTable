@@ -106,6 +106,16 @@ msgstr "Search"
 msgid  "Only return records where the '%1' field equals specified value"
 msgstr "Only return records where the '%1' field equals specified value"
 
+# arg: FIELD.in
+
+msgid  "Only return records where the '%1' field is in the specified values"
+msgstr "Only return records where the '%1' field is in the specified values"
+
+# arg: FIELD.not_in
+
+msgid  "Only return records where the '%1' field is not in the specified values"
+msgstr "Only return records where the '%1' field is not in the specified values"
+
 # arg: FIELD.has
 
 msgid  "Only return records where the '%1' field is an array/list which contains specified value"
