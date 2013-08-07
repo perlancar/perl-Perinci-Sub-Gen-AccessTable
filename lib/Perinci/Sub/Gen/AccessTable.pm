@@ -883,8 +883,8 @@ arguments.
   The *result_limit* and *result_start* arguments are paging options, they work
   like LIMIT clause in SQL, except that index starts at 1 and not 0. For
   example, to return the first 20 records in the result, set *result_limit* to
-  20. To return the next 20 records, set *result_limit* to 20 and *result_start*
-  to 21.
+  20 . To return the next 20 records, set *result_limit* to 20 and
+  *result_start* to 21.
 
 * *random* => BOOL (default 0)
 
@@ -911,23 +911,23 @@ arguments.
 
   Undef values will not match any filter, just like NULL in SQL.
 
-  + *FIELD.is* and *FIELD.isnt* arguments for each field. Only records with
+  * *FIELD.is* and *FIELD.isnt* arguments for each field. Only records with
      field equalling (or not equalling) value exactly ('==' or 'eq') will be
      included. If doesn't clash with other function arguments, *FIELD* will also
      be added as an alias for *FIELD.is*.
 
-  + *FIELD.has* and *FIELD.lacks* array arguments for each set field. Only
+  * *FIELD.has* and *FIELD.lacks* array arguments for each set field. Only
     records with field having or lacking certain value will be included.
 
-  + *FIELD.min* and *FIELD.max* for each int/float/str field. Only records with
+  * *FIELD.min* and *FIELD.max* for each int/float/str field. Only records with
     field greater/equal than, or less/equal than a certain value will be
     included.
 
-  + *FIELD.contains* and *FIELD.not_contains* for each str field. Only records
+  * *FIELD.contains* and *FIELD.not_contains* for each str field. Only records
     with field containing (or not containing) certain value (substring) will be
     included.
 
-  + *FIELD.matches* and *FIELD.not_matches* for each str field. Only records
+  * *FIELD.matches* and *FIELD.not_matches* for each str field. Only records
     with field matching (or not matching) certain value (regex) (or will be
     included. Function will return 400 if regex is invalid. These arguments will
     not be generated if 'filterable_regex' clause in field specification is set

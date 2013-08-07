@@ -1,5 +1,16 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.20     2013-08-07 (SHARYANTO)
+
+         [ENHANCEMENTS]
+
+         - Add F.in and F.not_in filtering arguments for each field.
+
+         [ETC]
+
+         - Add 'use experimental smartmatch' for 5.18+.
+
+
 0.19     2013-07-05 (SHARYANTO)
 
          [BUG FIXES]
@@ -18,8 +29,8 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
 0.17     2012-11-02 (SHARYANTO)
 
-         No functional changes. Slightly reduce startup overhead by not using
-         Perinci::Exporter and delay loading modules.
+         - No functional changes. Slightly reduce startup overhead by not using
+           Perinci::Exporter and delay loading modules.
 
          [INCOMPATIBLE CHANGES]
 
@@ -29,9 +40,9 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
 0.16     2012-08-10 (SHARYANTO)
 
-         No functional changes. To avoid circular dependency, split
-         Perinci::Sub::Gen::common into its own dist and rename it to
-         Perinci::Sub::Gen.
+         - No functional changes. To avoid circular dependency, split
+           Perinci::Sub::Gen::common into its own dist and rename it to
+           Perinci::Sub::Gen.
 
 
 0.15     2012-08-04 (SHARYANTO)
@@ -109,8 +120,8 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
 0.07     2012-03-22 (SHARYANTO)
 
-         Rename distribution from Sub-Spec-Gen-ReadTable to
-         Perinci-Sub-Gen-AccessTable.
+         - Rename distribution from Sub-Spec-Gen-ReadTable to
+           Perinci-Sub-Gen-AccessTable.
 
          [INCOMPATIBLE CHANGES]
 
@@ -121,7 +132,7 @@ Revision history for Perinci-Sub-Gen-AccessTable
          - Rename some arguments: show_field_names -> with_field_names.
 
          - Rename some filter arguments, for consistency: contain -> contains,
-         not -> isnt, match -> matches, lack -> lacks.
+           not -> isnt, match -> matches, lack -> lacks.
 
          [ENHANCEMENTS]
 
@@ -132,28 +143,28 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
 0.06     2012-01-20 (SHARYANTO)
 
-         No functional changes. Mark deprecation.
+         - No functional changes. Mark deprecation.
 
 
 0.05     2011-11-23 (SHARYANTO)
 
-         No functional changes. Replace Data::Sah::Util with Data::Sah.
+         - No functional changes. Replace Data::Sah::Util with Data::Sah.
 
 
 0.04     2011-10-19 (SHARYANTO)
 
          [INCOMPATIBLE CHANGES, ENHANCEMENTS]
 
-         'table_data' function is now expected to return {data=>DATA, ...}
-         instead of just DATA. This is to allow function to return data that is
-         already filtered (by passing filtered=>1), and/or sorted (sorted=>1),
-         and/or paged (paged=>1) for efficiency.
+         - 'table_data' function is now expected to return {data=>DATA, ...}
+           instead of just DATA. This is to allow function to return data that
+           is already filtered (by passing filtered=>1), and/or sorted
+           (sorted=>1), and/or paged (paged=>1) for efficiency.
 
 
 0.03     2011-08-31 (SHARYANTO)
 
-         No functional changes. Updated because _parse_schema() is moved from
-         Sub::Spec::Utils to Data::Sah::Util.
+         - No functional changes. Updated because _parse_schema() is moved from
+           Sub::Spec::Utils to Data::Sah::Util.
 
 
 0.02     2011-06-13 (SHARYANTO)
@@ -170,4 +181,4 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
 0.01     2011-06-13 (SHARYANTO)
 
-         First release.
+         - First release.
