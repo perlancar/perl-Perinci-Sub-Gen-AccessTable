@@ -1279,9 +1279,9 @@ Now you can do:
 
 This module is useful when you want to expose a table data (an array of
 hashrefs, an array of arrays, or external data like a SQL table) as an API
-function. This module will generate a function that accepts arguments for
-specifying fields, filtering, sorting, and paging; along with its L<Rinci>
-metadata. The resulting function can then be run via command-line using
+function. This module will generate a function (along with its L<Rinci>
+metadata) that accepts arguments for specifying fields, filtering, sorting, and
+paging. The resulting function can then be run via command-line using
 L<Perinci::CmdLine> (as demonstrated in Synopsis), or served via HTTP using
 L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
 
