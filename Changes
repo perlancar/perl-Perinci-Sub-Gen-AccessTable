@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.21     2013-09-11 (SHARYANTO)
+
+         - No functional changes. Forgot to silence smartmatch again warnings
+           after 'use warnings'" [CT].
+
+
 0.20     2013-08-07 (SHARYANTO)
 
          [ENHANCEMENTS]
