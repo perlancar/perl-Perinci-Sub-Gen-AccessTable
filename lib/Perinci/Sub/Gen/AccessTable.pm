@@ -804,6 +804,7 @@ sub _gen_func {
         }
 
         use warnings;
+        use experimental 'smartmatch';
 
         # perform paging
         $log->tracef("(read_table_func) Paging ...");
