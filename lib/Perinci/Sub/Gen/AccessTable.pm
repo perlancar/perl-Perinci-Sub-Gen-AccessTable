@@ -692,7 +692,7 @@ sub _gen_func {
             die "BUG: 'data' from table data function is not an array";
         }
         for ('after_fetch_data') {
-            $hookargs{_data} = $query;
+            $hookargs{_data} = $data;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
             $hooks->{$_}->(%hookargs);
