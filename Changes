@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.23     2013-09-12 (SHARYANTO)
+
+         - Generated function will add result_format_options result metadata to
+           hint order of columns.
+
+
 0.22     2013-09-12 (SHARYANTO)
 
          - Add hook: before_return.
