@@ -653,9 +653,9 @@ sub _gen_func {
         {
             my $res = __parse_query($table_spec, $opts, $func_meta, \%args);
             for ('after_parse_query') {
+                $hookargs{_parse_res} = $res;
                 last unless $hooks->{$_};
                 $hookargs{_stage} = $_;
-                $hookargs{_parse_res} = $res;
                 $hooks->{$_}->(%hookargs);
             }
             return $res unless $res->[0] == 200;
@@ -666,9 +666,9 @@ sub _gen_func {
         my $data;
         my $metadata = {};
         for ('before_fetch_data') {
+            $hookargs{_query} = $query;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hookargs{_query} = $query;
             $hooks->{$_}->(%hookargs);
         }
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
@@ -692,9 +692,9 @@ sub _gen_func {
             die "BUG: 'data' from table data function is not an array";
         }
         for ('after_fetch_data') {
+            $hookargs{_data} = $query;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hookargs{_data} = $query;
             $hooks->{$_}->(%hookargs);
         }
 
@@ -856,9 +856,9 @@ sub _gen_func {
         # return data
         my $res = [200, "OK", \@r];
         for ('before_return') {
+            $hookargs{_func_res} = $res;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hookargs{_func_res} = $res;
             $hooks->{$_}->(%hookargs);
         }
 
