@@ -630,6 +630,7 @@ sub _gen_func {
     my $func = sub {
         my %args = @_;
         my $hooks = $opts->{hooks};
+        my %hookargs = %args;
 
         # XXX schema
         while (my ($ak, $av) = each %$func_args) {
@@ -644,20 +645,31 @@ sub _gen_func {
         }
 
         for ('before_parse_query') {
-            $hooks->{$_}->(%args, _stage=>$_) if $hooks->{$_};
+            last unless $hooks->{$_};
+            $hookargs{_stage} = $_;
+            $hooks->{$_}->(%hookargs);
         }
-        my $res = __parse_query($table_spec, $opts, $func_meta, \%args);
-        for ('after_parse_query') {
-            $hooks->{$_}->(%args, _stage=>$_, _parse_res=>$res) if $hooks->{$_};
+        my $query;
+        {
+            my $res = __parse_query($table_spec, $opts, $func_meta, \%args);
+            for ('after_parse_query') {
+                last unless $hooks->{$_};
+                $hookargs{_stage} = $_;
+                $hookargs{_parse_res} = $res;
+                $hooks->{$_}->(%hookargs);
+            }
+            return $res unless $res->[0] == 200;
+            $query = $res->[2];
         }
-        return $res unless $res->[0] == 200;
-        my $query = $res->[2];
 
         # retrieve data
         my $data;
         my $metadata = {};
         for ('before_fetch_data') {
-            $hooks->{$_}->(%args, _stage=>$_, _query=>$query) if $hooks->{$_};
+            last unless $hooks->{$_};
+            $hookargs{_stage} = $_;
+            $hookargs{_query} = $query;
+            $hooks->{$_}->(%hookargs);
         }
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
@@ -680,8 +692,10 @@ sub _gen_func {
             die "BUG: 'data' from table data function is not an array";
         }
         for ('after_fetch_data') {
-            $hooks->{$_}->(%args, _stage=>$_, _query=>$query, _data=>$data)
-                if $hooks->{$_};
+            last unless $hooks->{$_};
+            $hookargs{_stage} = $_;
+            $hookargs{_data} = $query;
+            $hooks->{$_}->(%hookargs);
         }
 
         # this will be the final result.
@@ -840,7 +854,15 @@ sub _gen_func {
       SKIP_SELECT_FIELDS:
 
         # return data
-        [200, "OK", \@r];
+        my $res = [200, "OK", \@r];
+        for ('before_return') {
+            last unless $hooks->{$_};
+            $hookargs{_stage} = $_;
+            $hookargs{_func_res} = $res;
+            $hooks->{$_}->(%hookargs);
+        }
+
+        $res;
     };
 
     [200, "OK", $func];
@@ -1115,9 +1137,13 @@ _
 
 You can instruct the generated function to execute codes in various stages by
 using hooks. Currently available hooks are: `before_parse_query`,
-`after_parse_query`, `before_fetch_data`, `after_fetch_data`. Hooks will be
-passed the function arguments as well as zero or more additional ones,
-including: `_stage` (name of stage).
+`after_parse_query`, `before_fetch_data`, `after_fetch_data`, `before_return`.
+Hooks will be passed the function arguments as well as one or more additional
+ones. All hooks will get `_stage` (name of stage). `after_parse_query` and later
+hooks will also get `_parse_res` (parse result). `before_fetch_data` and later
+will also get `_query`. `after_fetch_data` and later will also get `_data`.
+`before_return` will also get `_func_res` (the enveloped response to be returned
+to user).
 
 _
         },

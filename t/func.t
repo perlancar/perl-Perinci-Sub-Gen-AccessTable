@@ -424,6 +424,7 @@ test_gen(
                 after_parse_query  => $hook_code,
                 before_fetch_data  => $hook_code,
                 after_fetch_data   => $hook_code,
+                before_return      => $hook_code,
             },
         },
         status => 200,
@@ -437,6 +438,7 @@ test_gen(
                           after_parse_query  => 2,
                           before_fetch_data  => 3,
                           after_fetch_data   => 4,
+                          before_return      => 5,
                       },
                       'hooks run');
         },
