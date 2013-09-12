@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.22     2013-09-12 (SHARYANTO)
+
+         - Add hook: before_return.
+
+         - Update examples.
+
+
 0.21     2013-09-11 (SHARYANTO)
 
          - No functional changes. Forgot to silence smartmatch again warnings
