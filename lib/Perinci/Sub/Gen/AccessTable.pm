@@ -853,8 +853,14 @@ sub _gen_func {
         }
       SKIP_SELECT_FIELDS:
 
-        # return data
         my $res = [200, "OK", \@r];
+
+        my %rfopts = (table_column_orders => [$query->{requested_fields}]);
+        $res->[3]{result_format_options} = {
+            text          => \%rfopts,
+            "text-pretty" => \%rfopts,
+        };
+
         for ('before_return') {
             $hookargs{_func_res} = $res;
             last unless $hooks->{$_};
