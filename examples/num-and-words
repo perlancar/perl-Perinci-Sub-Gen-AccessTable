@@ -33,6 +33,7 @@ my $data_sub = sub {
 };
 
 my $res = gen_read_table_func(
+    name => 'num_and_words',
     table_data => $data_sub,
     table_spec => {
         summary => 'Numbers with their English and Indonesian spelling',
@@ -60,9 +61,5 @@ my $res = gen_read_table_func(
     },
 );
 die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
-no warnings;
-*num_and_words = $res->[2]{code};
-use warnings;
-$SPEC{num_and_words} = $res->[2]{meta};
 
 Perinci::CmdLine->new(url=>'/main/num_and_words')->run;

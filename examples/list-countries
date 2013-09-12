@@ -16,6 +16,7 @@ my $countries = [
 ];
 
 my $res = gen_read_table_func(
+    name => 'list_countries',
     table_data => $countries,
     table_spec => {
         summary => 'List of countries',
@@ -55,9 +56,5 @@ my $res = gen_read_table_func(
     },
 );
 die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
-no warnings;
-*list_countries       = $res->[2]{code};
-use warnings;
-$SPEC{list_countries} = $res->[2]{meta};
 
 Perinci::CmdLine->new(url=>'/main/list_countries')->run;
