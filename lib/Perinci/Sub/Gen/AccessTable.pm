@@ -47,7 +47,7 @@ sub __is_filter_arg {
     return 0 unless $tags;
     for my $tag (@$tags) {
         next unless ref($tag) eq 'HASH';
-        return 1 if $tag->{name} =~ /^cat:filtering/;
+        return 1 if $tag->{name} =~ /^category:filtering/;
     }
     0;
 }
@@ -63,7 +63,7 @@ sub _add_arg {
 
     die "BUG: Duplicate arg $arg_name" if $func_meta->{args}{$arg_name};
 
-    my $tag = {name=>"cat:$args{cat_name}"};
+    my $tag = {name=>"category:$args{cat_name}"};
     my $schema = ref($args{type}) eq 'ARRAY' ? $args{type} :
         [$args{type} => {}];
     $schema->[1] //= {};
