@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.24     2013-10-03 (SHARYANTO)
+
+         - No functional changes. A couple of fixes.
+
+
 0.23     2013-09-12 (SHARYANTO)
 
          - Generated function will add result_format_options result metadata to
