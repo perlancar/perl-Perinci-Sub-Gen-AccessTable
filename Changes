@@ -1,6 +1,13 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
-0.25     2013-10-03 (SHARYANTO)
+0.26     2013-10-05 (SHARYANTO)
+
+         - Add formatting hints for bools.
+
+         - Order result fields by their index in spec.
+
+
+0.25     2013-10-05 (SHARYANTO)
 
          - Hook can abort function by returning an error response.
 
