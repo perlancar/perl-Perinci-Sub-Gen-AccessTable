@@ -856,13 +856,20 @@ sub _gen_func {
         }
       SKIP_SELECT_FIELDS:
 
-        my $res = [200, "OK", \@r];
+        my $resmeta = {};
+        my $res = [200, "OK", \@r, $resmeta];
 
         my %rfopts = (table_column_orders => [$query->{requested_fields}]);
-        $res->[3]{result_format_options} = {
+        $resmeta->{result_format_options} = {
             text          => \%rfopts,
             "text-pretty" => \%rfopts,
         };
+        # bool needs hints
+        $resmeta->{table_column_formats} = [{
+            map { $_ => [bool => {type=>'check'}] }
+                grep { $fspecs->{$_}{schema}[0] eq 'bool' }
+                    @{$query->{requested_fields}}
+        }];
 
         for ('before_return') {
             $hookargs{_func_res} = $res;
@@ -873,7 +880,7 @@ sub _gen_func {
         }
 
         $res;
-    };
+    }; # func;
 
     [200, "OK", $func];
 }
