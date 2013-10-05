@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.25     2013-10-03 (SHARYANTO)
+
+         - Hook can abort function by returning an error response.
+
+
 0.24     2013-10-03 (SHARYANTO)
 
          - No functional changes. A couple of fixes.
