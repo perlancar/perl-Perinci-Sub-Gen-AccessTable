@@ -1370,6 +1370,17 @@ It is often not a good idea to expose your database schema directly as API.
 
 =head1 FAQ
 
+=head2 I want my function to accept additional arguments.
+
+You can add arguments to the metadata by yourself, e.g.:
+
+ our %SPEC;
+ gen_read_table_func(name => 'myfunc', ...);
+ $SPEC{myfunc}{args}{add1} = {...};
+
+As for the implementation, you can specify hooks to do things with the extra
+arguments.
+
 
 =head1 SEE ALSO
 
