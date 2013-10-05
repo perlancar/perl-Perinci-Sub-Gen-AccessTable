@@ -634,7 +634,8 @@ sub _gen_func {
 
         # XXX schema
         while (my ($ak, $av) = each %$func_args) {
-            if (defined $av->{schema}[1]{default}) {
+            if (ref($av->{schema}) && ref($av->{schema}[1]) &&
+                    defined($av->{schema}[1]{default})) {
                 $args{$ak} //= $av->{schema}[1]{default};
             }
             # array-ize "string,with,comma"
