@@ -647,7 +647,8 @@ sub _gen_func {
         for ('before_parse_query') {
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
         my $query;
         {
@@ -656,7 +657,8 @@ sub _gen_func {
                 $hookargs{_parse_res} = $res;
                 last unless $hooks->{$_};
                 $hookargs{_stage} = $_;
-                $hooks->{$_}->(%hookargs);
+                my $hres = $hooks->{$_}->(%hookargs);
+                return $hres if ref($hres);
             }
             return $res unless $res->[0] == 200;
             $query = $res->[2];
@@ -669,7 +671,8 @@ sub _gen_func {
             $hookargs{_query} = $query;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
@@ -694,7 +697,8 @@ sub _gen_func {
             $hookargs{_data} = $data;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
 
         # this will be the final result.
@@ -864,7 +868,8 @@ sub _gen_func {
             $hookargs{_func_res} = $res;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
 
         $res;
@@ -1149,6 +1154,10 @@ hooks will also get `_parse_res` (parse result). `before_fetch_data` and later
 will also get `_query`. `after_fetch_data` and later will also get `_data`.
 `before_return` will also get `_func_res` (the enveloped response to be returned
 to user).
+
+Hook should return nothing or a false value on success. It can abort execution
+of the generated function if it returns an envelope response (an array). On that
+case, the function will return with this return value.
 
 _
         },

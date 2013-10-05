@@ -413,6 +413,7 @@ test_gen(
         my %args = @_;
         $stash->{ $args{_stage} } = $n;
         $n++;
+        return;
     };
     test_gen(
         name => 'hooks',
@@ -441,6 +442,28 @@ test_gen(
                           before_return      => 5,
                       },
                       'hooks run');
+        },
+    );
+
+    $hook_code = sub { [500, "Aborted"] };
+    test_gen(
+        name => 'hook can abort func',
+        table_data => $table_data,
+        table_spec => $table_spec,
+        other_args => {
+            hooks => {
+                before_parse_query => $hook_code,
+                #after_parse_query  => $hook_code,
+                #before_fetch_data  => $hook_code,
+                #after_fetch_data   => $hook_code,
+                #before_return      => $hook_code,
+            },
+        },
+        status => 200,
+        post_test => sub {
+            my ($res) = @_;
+            my $func = $res->[2]{code};
+            is_deeply($func->(), [500, "Aborted"]);
         },
     );
 }
