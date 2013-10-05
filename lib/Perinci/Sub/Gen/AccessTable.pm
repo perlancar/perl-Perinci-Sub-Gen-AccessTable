@@ -859,17 +859,19 @@ sub _gen_func {
         my $resmeta = {};
         my $res = [200, "OK", \@r, $resmeta];
 
-        my %rfopts = (table_column_orders => [$query->{requested_fields}]);
+        my %rfopts = (
+            table_column_orders  => [$query->{requested_fields}],
+            # bool needs display hints
+            table_column_formats => [{
+                map { $_ => [bool => {type=>'check'}] }
+                    grep { $fspecs->{$_}{schema}[0] eq 'bool' }
+                        @{$query->{requested_fields}}
+                    }],
+        );
         $resmeta->{result_format_options} = {
             text          => \%rfopts,
             "text-pretty" => \%rfopts,
         };
-        # bool needs hints
-        $resmeta->{table_column_formats} = [{
-            map { $_ => [bool => {type=>'check'}] }
-                grep { $fspecs->{$_}{schema}[0] eq 'bool' }
-                    @{$query->{requested_fields}}
-        }];
 
         for ('before_return') {
             $hookargs{_func_res} = $res;
