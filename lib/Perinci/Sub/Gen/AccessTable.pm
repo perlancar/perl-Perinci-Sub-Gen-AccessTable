@@ -632,6 +632,7 @@ sub _gen_func {
         my %args = @_;
         my $hooks = $opts->{hooks};
         my %hookargs = %args;
+        $hookargs{_func_args} = \%args;
 
         # XXX schema
         while (my ($ak, $av) = each %$func_args) {
@@ -1160,11 +1161,12 @@ You can instruct the generated function to execute codes in various stages by
 using hooks. Currently available hooks are: `before_parse_query`,
 `after_parse_query`, `before_fetch_data`, `after_fetch_data`, `before_return`.
 Hooks will be passed the function arguments as well as one or more additional
-ones. All hooks will get `_stage` (name of stage). `after_parse_query` and later
-hooks will also get `_parse_res` (parse result). `before_fetch_data` and later
-will also get `_query`. `after_fetch_data` and later will also get `_data`.
-`before_return` will also get `_func_res` (the enveloped response to be returned
-to user).
+ones. All hooks will get `_stage` (name of stage) and `_func_res` (function
+arguments, but as hash reference so you can modify it). `after_parse_query` and
+later hooks will also get `_parse_res` (parse result). `before_fetch_data` and
+later will also get `_query`. `after_fetch_data` and later will also get
+`_data`. `before_return` will also get `_func_res` (the enveloped response to be
+returned to user).
 
 Hook should return nothing or a false value on success. It can abort execution
 of the generated function if it returns an envelope response (an array). On that
