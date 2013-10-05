@@ -10,7 +10,7 @@ use experimental 'smartmatch';
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
-use Perinci::Sub::Util qw(wrapres); # caller
+use Perinci::Sub::Util qw(err);
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
@@ -444,7 +444,7 @@ sub __parse_query {
         $args->{with_field_names} //= 0;
     }
     for (@requested_fields) {
-        return [400, "Unknown field $_"] unless $_ ~~ @fields;
+        return err(400, "Unknown field $_") unless $_ ~~ @fields;
     }
     $query->{requested_fields} = \@requested_fields;
 
@@ -594,11 +594,11 @@ sub __parse_query {
         my @f = split /\s*[,;]\s*/, $args->{sort};
         for my $f (@f) {
             my $desc = $f =~ s/^-//;
-            return [400, "Unknown field in sort: $f"]
+            return err(400, "Unknown field in sort: $f")
                 unless $f ~~ @fields;
             my $fspec = $fspecs->{$f};
             my $ftype = $fspec->{schema}[0];
-            return [400, "Field $f is not sortable"]
+            return err(400, "Field $f is not sortable")
                 unless !defined($fspec->{sortable}) || $fspec->{sortable};
             my $op = $ftype =~ /^(int|float)$/ ? '<=>' : 'cmp';
             #print "ftype=$ftype, op=$op\n";
@@ -675,14 +675,13 @@ sub _gen_func {
             $data = $table_data;
         } elsif (reftype($table_data) eq 'CODE') {
             my $res;
-            return [500, "BUG: Table data function died: $@"]
+            return err(500, "BUG: Table data function died: $@")
                 unless eval { $res = $table_data->($query) };
-            return [500, "BUG: Result returned from table data function ".
-                        "is not a hash, please report to administrator"]
-                unless ref($res) eq 'HASH';
+            return err(500, "BUG: Result returned from table data function ".
+                           "is not a hash") unless ref($res) eq 'HASH';
             $data = $res->{data};
-            return [500, "BUG: 'data' key from table data function ".
-                        "is not an AoA/AoH, please report to administrator"]
+            return err(500, "BUG: 'data' key from table data function ".
+                           "is not an AoA/AoH")
                 unless __is_aoa($data) || __is_aoh($data);
             for (qw/filtered sorted paged fields_selected/) {
                 $metadata->{$_} = $res->{$_};
@@ -720,7 +719,7 @@ sub _gen_func {
             } elsif (ref($r0) eq 'HASH') {
                 $r_h = { %$r0 };
             } else {
-                return [500, "BUG: Invalid record, not a hash/array"];
+                return err(500, "BUG: Invalid record, not a hash/array");
             }
 
             goto SKIP_FILTER if $metadata->{filtered};
@@ -1234,13 +1233,11 @@ sub _gen_read_table_func {
 
     my $res;
     $res = $self->_gen_meta($table_spec, $opts);
-    return wrapres([undef, "Can't generate meta: "], $res)
-        unless $res->[0] == 200;
+    return err(500, "Can't generate meta", $res) unless $res->[0] == 200;
     my $func_meta = $res->[2];
 
     $res = $self->_gen_func($table_spec, $opts, $table_data, $func_meta);
-    return wrapres([undef, "Can't generate func: "], $res)
-        unless $res->[0] == 200;
+    return err(500, "Can't generate func", $res) unless $res->[0] == 200;
     my $func = $res->[2];
 
     if ($args{install} // 1) {
