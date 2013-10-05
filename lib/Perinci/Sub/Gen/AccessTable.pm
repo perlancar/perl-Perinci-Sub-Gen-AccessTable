@@ -430,7 +430,8 @@ sub __parse_query {
     my $query = {args=>$args};
 
     my $fspecs = $table_spec->{fields};
-    my @fields = keys %$fspecs;
+    my @fields = sort {$fspecs->{$a}{index} <=> $fspecs->{$b}{index}}
+        keys %$fspecs;
 
     my @requested_fields;
     if ($args->{detail}) {
