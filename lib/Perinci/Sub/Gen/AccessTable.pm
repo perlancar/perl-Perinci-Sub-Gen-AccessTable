@@ -863,7 +863,7 @@ sub _gen_func {
             table_column_orders  => [$query->{requested_fields}],
             # bool needs display hints
             table_column_formats => [{
-                map { $_ => [bool => {type=>'check'}] }
+                map { $_ => [[bool => {type=>'check'}]] }
                     grep { $fspecs->{$_}{schema}[0] eq 'bool' }
                         @{$query->{requested_fields}}
                     }],
