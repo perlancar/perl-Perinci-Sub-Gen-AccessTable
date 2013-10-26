@@ -269,6 +269,18 @@ _
             $func_args->{$fname} =
                 Data::Clone::clone($func_args->{"$fname.is"});
         }
+        $self->_add_arg(
+            func_meta   => $func_meta,
+            langs       => $langs,
+            name        => "$fname.isnt",
+            type        => "$ftype*",
+            default     => $opts->{"default_$fname.isnt"},
+            cat_name    => "filtering-for-$fname",
+            cat_text    => "filtering for [_1]",
+            summary     => "Only return records where the '[_1]' field ".
+                "does not equal specified value",
+        );
+
         # .in & .not_in should be applicable to arrays to, but it is currently
         # implemented with perl's ~~ which can't handle this transparently. as
         # for bool, it's not that important.
@@ -458,6 +470,9 @@ sub __parse_query {
         if (defined $args->{"$f.is"}) {
             $exists++;
             push @filters, [$f, "truth", $args->{"$f.is"}];
+        } elsif (defined $args->{"$f.isnt"}) {
+            $exists++;
+            push @filters, [$f, "truth", !$args->{"$f.isnt"}];
         } elsif (defined($args->{$f}) && __is_filter_arg($f, $func_meta)) {
             $exists++;
             push @filters, [$f, "truth", $args->{$f}];

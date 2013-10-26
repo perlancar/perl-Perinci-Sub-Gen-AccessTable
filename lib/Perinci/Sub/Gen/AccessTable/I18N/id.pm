@@ -107,6 +107,11 @@ msgstr "Cari"
 msgid  "Only return records where the '%1' field equals specified value"
 msgstr "Hanya kembalikan rekord yang field '%1'-nya bernilai tertentu"
 
+# arg: FIELD.isnt
+
+msgid  "Only return records where the '%1' field does not equal specified value"
+msgstr "Hanya kembalikan rekord yang field '%1'-nya tidak sama dengan nilai tertentu"
+
 # arg: FIELD.in
 
 msgid  "Only return records where the '%1' field is in the specified values"
@@ -166,4 +171,3 @@ msgstr "Hanya kembalikan rekord yang field '%1'-nya cocok dengan pola regex tert
 
 msgid  "Only return records where the '%1' field does not match specified regular expression"
 msgstr "Hanya kembalikan rekord yang field '%1'-nya tidak cocok dengan pola regex tertentu"
-

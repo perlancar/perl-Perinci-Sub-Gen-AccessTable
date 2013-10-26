@@ -106,6 +106,11 @@ msgstr "Search"
 msgid  "Only return records where the '%1' field equals specified value"
 msgstr "Only return records where the '%1' field equals specified value"
 
+# arg: FIELD.isnt
+
+msgid  "Only return records where the '%1' field does not equal specified value"
+msgstr "Only return records where the '%1' field does not equal specified value"
+
 # arg: FIELD.in
 
 msgid  "Only return records where the '%1' field is in the specified values"
@@ -165,4 +170,3 @@ msgstr "Only return records where the '%1' field matches specified regular expre
 
 msgid  "Only return records where the '%1' field does not match specified regular expression"
 msgstr "Only return records where the '%1' field does not match specified regular expression"
-
