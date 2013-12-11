@@ -1,0 +1,209 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Steven Haryanto
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Perinci-Sub-Gen-AccessTable 0.27\n"
+"Report-Msgid-Bugs-To: stevenharyanto@gmail.com\n"
+"POT-Creation-Date: 2013-12-11 17:52+0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:105
+msgid "Data is in table form. Table fields are as follow:"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:117
+msgid "ID field"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:159
+#: lib/Perinci/Sub/Gen/AccessTable.pm:177
+#: lib/Perinci/Sub/Gen/AccessTable.pm:193
+msgid "field selection"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:160
+msgid "Return field names in each record (as hash/associative array)"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:163
+msgid ""
+"\n"
+"When enabled, function will return each record as hash/associative array\n"
+"(field name => value pairs). Otherwise, function will return each record\n"
+"as list/array (field value, field value, ...).\n"
+"\n"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:178
+msgid "Return array of full records instead of just ID fields"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:181
+msgid ""
+"\n"
+"By default, only the key (ID) field is returned per result entry.\n"
+"\n"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:194
+msgid "Select fields to return"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:203
+#: lib/Perinci/Sub/Gen/AccessTable.pm:219
+msgid "ordering"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:204
+msgid "Order records according to certain field(s)"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:206
+msgid ""
+"\n"
+"A list of field names separated by comma. Each field can be prefixed with "
+"'-' to\n"
+"specify descending order instead of the default ascending.\n"
+"\n"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:220
+msgid "Return records in random order"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:229
+#: lib/Perinci/Sub/Gen/AccessTable.pm:239
+msgid "paging"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:230
+msgid "Only return a certain number of records"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:240
+msgid "Only return starting from the n'th record"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:248
+msgid "filtering"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:249
+msgid "Search"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:268
+#: lib/Perinci/Sub/Gen/AccessTable.pm:283
+#: lib/Perinci/Sub/Gen/AccessTable.pm:298
+#: lib/Perinci/Sub/Gen/AccessTable.pm:308
+#: lib/Perinci/Sub/Gen/AccessTable.pm:321
+#: lib/Perinci/Sub/Gen/AccessTable.pm:332
+#: lib/Perinci/Sub/Gen/AccessTable.pm:345
+#: lib/Perinci/Sub/Gen/AccessTable.pm:356
+#: lib/Perinci/Sub/Gen/AccessTable.pm:367
+#: lib/Perinci/Sub/Gen/AccessTable.pm:378
+#: lib/Perinci/Sub/Gen/AccessTable.pm:391
+#: lib/Perinci/Sub/Gen/AccessTable.pm:402
+#: lib/Perinci/Sub/Gen/AccessTable.pm:414
+#: lib/Perinci/Sub/Gen/AccessTable.pm:425
+#, perl-brace-format
+msgid "filtering for {field}"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:269
+#, perl-brace-format
+msgid "Only return records where the '{field}' field equals specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:284
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field does not equal specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:299
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is in the specified values"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:309
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is not in the specified values"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:322
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is an array/list which "
+"contains specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:333
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is an array/list which does "
+"not contain specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:346
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is greater than or equal to "
+"specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:357
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is less than or equal to "
+"specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:368
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is greater than specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:379
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field is less than specified value"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:392
+#, perl-brace-format
+msgid "Only return records where the '{field}' field contains specified text"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:403
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field does not contain specified text"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:415
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field matches specified regular "
+"expression pattern"
+msgstr ""
+
+#: lib/Perinci/Sub/Gen/AccessTable.pm:426
+#, perl-brace-format
+msgid ""
+"Only return records where the '{field}' field does not match specified "
+"regular expression"
+msgstr ""

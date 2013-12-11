@@ -4,17 +4,16 @@ use 5.010001;
 use Log::Any '$log';
 use strict;
 use warnings;
-use Moo; # we go OO just for the I18N, we don't store attributes, etc
 use experimental 'smartmatch';
 
 use List::Util qw(shuffle);
+use Locale::TextDomain 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
+use POSIX qw(locale_h);
 use Scalar::Util qw(reftype);
-use SHARYANTO::String::Util qw(trim_blank_lines);
-
-with 'SHARYANTO::Role::I18NMany';
+#use SHARYANTO::String::Util qw(trim_blank_lines);
 
 require Exporter;
 our @ISA       = qw(Exporter);
@@ -53,12 +52,11 @@ sub __is_filter_arg {
 }
 
 sub _add_arg {
-    my ($self, %args) = @_;
+    my %args = @_;
 
     my $arg_name  = $args{name};
     my $fname     = $args{name}; $fname =~ s/\..+//;
     my $func_meta = $args{func_meta};
-    my $locl_args = [$fname];
     my $langs     = $args{langs};
 
     die "BUG: Duplicate arg $arg_name" if $func_meta->{args}{$arg_name};
@@ -73,33 +71,45 @@ sub _add_arg {
         tags => [$tag],
     };
 
+    # translation args
+    my %xargs = (field => $fname);
+
+    my $orig_locale = setlocale(LC_ALL);
+
     for my $prop (qw/summary description/) {
         next unless defined $args{$prop};
-        $args{$prop} = trim_blank_lines($args{$prop});
+        #$args{$prop} = trim_blank_lines($args{$prop});
         for my $lang (@$langs) {
-            my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
-                $arg_spec->{$k} = $self->locl(
-                    $lang, $args{$prop}, @$locl_args);
-        }
-    }
-    for my $lang (@$langs) {
-        for my $prop (qw/summary/) {
-            my $k = $prop . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
-            $tag->{$k} = $self->locl(
-                $lang, $args{cat_text}, @$locl_args);
+            setlocale(LC_ALL, $lang);
+            my $isdeflang = $lang eq 'en_US';
+            my $k = $prop . ($isdeflang ? '' : ".alt.lang.$lang");
+            $arg_spec->{$k} = __x($args{$prop}, %xargs);
         }
     }
 
+    for my $lang (@$langs) {
+        for my $prop (qw/summary/) {
+            setlocale(LC_ALL, $lang);
+            my $isdeflang = $lang eq 'en_US';
+            my $k = $prop . ($isdeflang ? '' : ".alt.lang.$lang");
+            say "D:cat_text=$args{cat_text}, __x=", __x($args{cat_text}), ", LANG=", $ENV{LANG} // "", ", LANGUAGE=", $ENV{LANGUAGE};
+            $tag->{$k} = __x($args{cat_text}, %xargs);
+        }
+    }
+
+    setlocale(LC_ALL, $orig_locale);
     $func_meta->{args}{$arg_name} = $arg_spec;
 }
 
 sub _add_table_desc_to_func_description {
-    my ($self, $func_meta, $table_spec, $opts) = @_;
+    my ($func_meta, $table_spec, $opts) = @_;
     my $langs = $opts->{langs};
 
+    my $orig_locale = setlocale(LC_ALL);
+
     for my $lang (@$langs) {
-        my $td = $self->locl(
-            $lang, "Data is in table form. Table fields are as follow:");
+        setlocale(LC_ALL, $lang);
+        my $td = __ "Data is in table form. Table fields are as follow:";
         $td .= "\n\n";
         my $ff = $table_spec->{fields};
         for my $fn (sort {($ff->{$a}{index}//0) <=> ($ff->{$b}{index}//0)}
@@ -111,7 +121,7 @@ sub _add_table_desc_to_func_description {
                 join("",
                      "  - *$fn*",
                      $table_spec->{pk} eq $fn ?
-                         " (".$self->locl($lang, "ID field").")":"",
+                         " (".__x("ID field").")":"",
                      $sum ? ": $sum" : "",
                      "\n\n");
             my $desc = $fo->langprop("description", {lang=>$lang});
@@ -127,10 +137,12 @@ sub _add_table_desc_to_func_description {
         $func_meta->{$key} .= "\n" unless $func_meta->{$key} !~ /\S/;
         $func_meta->{$key} .= $td;
     }
+
+    setlocale(LC_ALL, $orig_locale);
 }
 
 sub _gen_meta {
-    my ($self, $table_spec, $opts) = @_;
+    my ($table_spec, $opts) = @_;
     my $langs = $opts->{langs};
 
     # add general arguments
@@ -142,107 +154,108 @@ sub _gen_meta {
         args => {},
     };
 
-    $self->_add_table_desc_to_func_description($func_meta, $table_spec, $opts);
+    _add_table_desc_to_func_description($func_meta, $table_spec, $opts);
 
     my $func_args = $func_meta->{args};
 
-    $self->_add_arg(
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'with_field_names',
         type        => 'bool',
         default     => $opts->{default_with_field_names},
         cat_name    => 'field-selection',
-        cat_text    => 'field selection',
-        summary     => 'Return field names in each record (as hash/'.
-            'associative array)',
-        description => <<'_',
+        cat_text    => N__('field selection'),
+        summary     => N__('Return field names in each record (as hash/'.
+                               'associative array)'),
+        description => N__(<<'_',
 
 When enabled, function will return each record as hash/associative array
 (field name => value pairs). Otherwise, function will return each record
 as list/array (field value, field value, ...).
 
 _
-    );
-    $self->_add_arg(
+    ));
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'detail',
         type        => 'bool',
         default     => $opts->{default_detail} // 0,
         cat_name    => 'field-selection',
-        cat_text    => 'field selection',
-        summary     => 'Return array of full records instead of just ID fields',
-        description => <<'_',
+        cat_text    => N__('field selection'),
+        summary     => N__('Return array of full records instead of '.
+                               'just ID fields'),
+        description => N__(<<'_',
 
 By default, only the key (ID) field is returned per result entry.
 
 _
-    );
-    $self->_add_arg(
+    ));
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'fields',
         type        => ['array*' => {of=>'str*'}],
         default     => $opts->{default_fields},
         cat_name    => 'field-selection',
-        cat_text    => 'field selection',
-        summary     => 'Select fields to return',
+        cat_text    => N__('field selection'),
+        summary     => N__('Select fields to return'),
     );
-    $self->_add_arg(
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'sort',
         type        => 'str',
         default     => $opts->{default_sort},
         cat_name    => 'ordering',
-        cat_text    => 'ordering',
-        summary     => 'Order records according to certain field(s)',
-        description => <<'_',
+        cat_text    => N__('ordering'),
+        summary     => N__('Order records according to certain field(s)'),
+        description => N__(<<'_',
 
 A list of field names separated by comma. Each field can be prefixed with '-' to
 specify descending order instead of the default ascending.
 
 _
-    );
-    $self->_add_arg(
+    ));
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'random',
         type        => 'bool',
         default     => $opts->{default_random} // 0,
         cat_name    => 'ordering',
-        cat_text    => 'ordering',
-        summary     => 'Return records in random order',
+        cat_text    => N__('ordering'),
+        summary     => N__('Return records in random order'),
     );
-    $self->_add_arg(
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'result_limit',
         type        => 'int',
         default     => $opts->{default_result_limit},
         cat_name    => 'paging',
-        cat_text    => 'paging',
-        summary     => 'Only return a certain number of records',
+        cat_text    => N__('paging'),
+        summary     => N__('Only return a certain number of records'),
     );
-    $self->_add_arg(
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'result_start',
         type        => 'int',
         default     => 1,
         cat_name    => 'paging',
-        cat_text    => 'paging',
-        summary => "Only return starting from the n'th record",
+        cat_text    => N__('paging'),
+        summary     => N__("Only return starting from the n'th record"),
     );
-    $self->_add_arg(
+    _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'q',
         type        => 'str',
         cat_name    => 'filtering',
-        cat_text    => 'filtering',
-        summary     => "Search",
+        cat_text    => N__('filtering'),
+        summary     => N__("Search"),
     ) if $opts->{enable_search} // 1;
 
     # add filter arguments for each table field
@@ -254,173 +267,173 @@ _
 
         next if defined($fspec->{filterable}) && !$fspec->{filterable};
 
-        $self->_add_arg(
+        _add_arg(
             func_meta   => $func_meta,
             langs       => $langs,
             name        => "$fname.is",
             type        => "$ftype*",
             default     => $opts->{"default_$fname.is"},
             cat_name    => "filtering-for-$fname",
-            cat_text    => "filtering for [_1]",
-            summary     => "Only return records where the '[_1]' field ".
-                "equals specified value",
+            cat_text    => N__("filtering for {field}"),
+            summary     => N__("Only return records where the '{field}' field ".
+                                   "equals specified value"),
         );
         unless ($func_args->{$fname}) {
             $func_args->{$fname} =
                 Data::Clone::clone($func_args->{"$fname.is"});
         }
-        $self->_add_arg(
+        _add_arg(
             func_meta   => $func_meta,
             langs       => $langs,
             name        => "$fname.isnt",
             type        => "$ftype*",
             default     => $opts->{"default_$fname.isnt"},
             cat_name    => "filtering-for-$fname",
-            cat_text    => "filtering for [_1]",
-            summary     => "Only return records where the '[_1]' field ".
-                "does not equal specified value",
+            cat_text    => N__("filtering for {field}"),
+            summary     => N__("Only return records where the '{field}' field ".
+                                   "does not equal specified value"),
         );
 
         # .in & .not_in should be applicable to arrays to, but it is currently
         # implemented with perl's ~~ which can't handle this transparently. as
         # for bool, it's not that important.
         unless ($ftype ~~ [qw/array bool/]) {
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.in",
                 type        => ['array*' => {of => "$ftype*"}],
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is in the specified values",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "is in the specified values"),
             );
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.not_in",
                 type        => ['array*' => {of => "$ftype*"}],
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is not in the specified values",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "is not in the specified values"),
             );
         }
         if ($ftype eq 'array') {
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.has",
                 type        => [array => {of=>'str*'}],
                 default     => $opts->{"default_$fname.has"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is an array/list which contains specified value",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "is an array/list which contains specified value"),
             );
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.lacks",
                 type        => [array => {of=>'str*'}],
                 default     => $opts->{"default_$fname.lacks"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is an array/list which does not contain specified value",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "is an array/list which does not contain specified value"),
             );
         }
         if ($ftype =~ /^(?:int|float|str)$/) { # XXX all Comparable types
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.min",
                 type        => $ftype,
                 default     => $opts->{"default_$fname.min"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is greater than or equal to specified value",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                    "is greater than or equal to specified value"),
             );
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.max",
                 type        => $ftype,
                 default     => $opts->{"default_$fname.max"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is less than or equal to specified value",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "is less than or equal to specified value"),
             );
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.xmin",
                 type        => $ftype,
                 default     => $opts->{"default_$fname.xmin"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is greater than specified value",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "is greater than specified value"),
             );
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.xmax",
                 type        => $ftype,
                 default     => $opts->{"default_$fname.xmax"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "is less than specified value",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "is less than specified value"),
             );
         }
         if ($ftype eq 'str') {
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.contains",
                 type        => $ftype,
                 default     => $opts->{"default_$fname.contains"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "contains specified text",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "contains specified text"),
             );
-            $self->_add_arg(
+            _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.not_contains",
                 type        => $ftype,
                 default     => $opts->{"default_$fname.not_contains"},
                 cat_name    => "filtering-for-$fname",
-                cat_text    => "filtering for [_1]",
-                summary     => "Only return records where the '[_1]' field ".
-                    "does not contain specified text",
+                cat_text    => N__("filtering for {field}"),
+                summary     => N__("Only return records where the '{field}' field ".
+                                       "does not contain specified text"),
             );
             if ($fspec->{filterable_regex}) {
-                $self->_add_arg(
+                _add_arg(
                     func_meta   => $func_meta,
                     langs       => $langs,
                     name        => "$fname.matches",
                     type        => $ftype,
                     default     => $opts->{"default_$fname.matches"},
                     cat_name    => "filtering-for-$fname",
-                    cat_text    => "filtering for [_1]",
-                    summary => "Only return records where the '[_1]' field ".
-                        "matches specified regular expression pattern",
+                    cat_text    => N__("filtering for {field}"),
+                    summary     => N__("Only return records where the '{field}' field ".
+                                           "matches specified regular expression pattern"),
                 );
-                $self->_add_arg(
+                _add_arg(
                     func_meta   => $func_meta,
                     langs       => $langs,
                     name        => "$fname.not_matches",
                     type        => $ftype,
                     default     => $opts->{"default_$fname.not_matches"},
                     cat_name    => "filtering-for-$fname",
-                    cat_text    => "filtering for [_1]",
-                    summary => "Only return records where the '[_1]' field " .
-                        "does not match specified regular expression",
+                    cat_text    => N__("filtering for {field}"),
+                    summary     => N__("Only return records where the '{field}' field " .
+                                           "does not match specified regular expression"),
                 );
             }
         }
@@ -639,7 +652,7 @@ sub __parse_query {
 }
 
 sub _gen_func {
-    my ($self, $table_spec, $opts, $table_data, $func_meta) = @_;
+    my ($table_spec, $opts, $table_data, $func_meta) = @_;
 
     my $fspecs = $table_spec->{fields};
     my $func_args = $func_meta->{args};
@@ -1192,16 +1205,9 @@ _
     },
 };
 sub gen_read_table_func {
-    my %args = @_;
-
-    my $self = __PACKAGE__->new;
-    $self->_gen_read_table_func(%args);
-}
-
-sub _gen_read_table_func {
     require Data::Clone;
 
-    my ($self, %args) = @_;
+    my %args = @_;
 
     # XXX schema
     my ($uqname, $package);
@@ -1269,11 +1275,11 @@ sub _gen_read_table_func {
     };
 
     my $res;
-    $res = $self->_gen_meta($table_spec, $opts);
+    $res = _gen_meta($table_spec, $opts);
     return err(500, "Can't generate meta", $res) unless $res->[0] == 200;
     my $func_meta = $res->[2];
 
-    $res = $self->_gen_func($table_spec, $opts, $table_data, $func_meta);
+    $res = _gen_func($table_spec, $opts, $table_data, $func_meta);
     return err(500, "Can't generate func", $res) unless $res->[0] == 200;
     my $func = $res->[2];
 
