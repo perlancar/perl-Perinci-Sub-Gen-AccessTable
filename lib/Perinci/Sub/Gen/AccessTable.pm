@@ -1,10 +1,10 @@
 package Perinci::Sub::Gen::AccessTable;
 
 use 5.010001;
-use Log::Any '$log';
 use strict;
 use warnings;
 use experimental 'smartmatch';
+use Log::Any '$log';
 
 use List::Util qw(shuffle);
 use Locale::TextDomain 'Perinci-Sub-Gen-AccessTable';
@@ -92,7 +92,6 @@ sub _add_arg {
             setlocale(LC_ALL, $lang);
             my $isdeflang = $lang eq 'en_US';
             my $k = $prop . ($isdeflang ? '' : ".alt.lang.$lang");
-            say "D:cat_text=$args{cat_text}, __x=", __x($args{cat_text}), ", LANG=", $ENV{LANG} // "", ", LANGUAGE=", $ENV{LANGUAGE};
             $tag->{$k} = __x($args{cat_text}, %xargs);
         }
     }
@@ -1213,7 +1212,7 @@ sub gen_read_table_func {
     my ($uqname, $package);
     my $fqname = $args{name};
     return [400, "Please specify name"] unless $fqname;
-    my @caller = caller(1);
+    my @caller = caller();
     if ($fqname =~ /(.+)::(.+)/) {
         $package = $1;
         $uqname  = $2;
