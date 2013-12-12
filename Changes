@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.28     2013-12-12 (SHARYANTO)
+
+         - Switch from Locale::Maketext to Locale::TextDomain.
+
+
 0.27     2013-10-26 (SHARYANTO)
 
          - Generate 'FIELD.isnt' arguments.
