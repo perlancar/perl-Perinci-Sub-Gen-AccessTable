@@ -108,7 +108,7 @@ sub _add_table_desc_to_func_description {
 
     for my $lang (@$langs) {
         setlocale(LC_ALL, $lang);
-        my $td = __ "Data is in table form. Table fields are as follow:";
+        my $td = __("Data is in table form. Table fields are as follow:");
         $td .= "\n\n";
         my $ff = $table_spec->{fields};
         for my $fn (sort {($ff->{$a}{index}//0) <=> ($ff->{$b}{index}//0)}
