@@ -2,7 +2,7 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
 0.29     2013-12-13 (SHARYANTO)
 
-         - Use Locale::TextDomain::UTF8.
+         - No functional changes. Use Locale::TextDomain::UTF8.
 
 
 0.28     2013-12-12 (SHARYANTO)
