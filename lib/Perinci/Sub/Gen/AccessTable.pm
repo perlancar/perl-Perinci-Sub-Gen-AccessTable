@@ -80,7 +80,7 @@ sub _add_arg {
         next unless defined $args{$prop};
         #$args{$prop} = trim_blank_lines($args{$prop});
         for my $lang (@$langs) {
-            setlocale(LC_ALL, $lang);
+            setlocale(LC_ALL, $lang) or warn "Can't setlocale $lang";
             my $isdeflang = $lang eq 'en_US';
             my $k = $prop . ($isdeflang ? '' : ".alt.lang.$lang");
             $arg_spec->{$k} = __x($args{$prop}, %xargs);
@@ -89,7 +89,7 @@ sub _add_arg {
 
     for my $lang (@$langs) {
         for my $prop (qw/summary/) {
-            setlocale(LC_ALL, $lang);
+            setlocale(LC_ALL, $lang) or warn "Can't setlocale $lang";
             my $isdeflang = $lang eq 'en_US';
             my $k = $prop . ($isdeflang ? '' : ".alt.lang.$lang");
             $tag->{$k} = __x($args{cat_text}, %xargs);
@@ -107,7 +107,7 @@ sub _add_table_desc_to_func_description {
     my $orig_locale = setlocale(LC_ALL);
 
     for my $lang (@$langs) {
-        setlocale(LC_ALL, $lang);
+        setlocale(LC_ALL, $lang) or warn "Can't setlocale $lang";
         my $td = __("Data is in table form. Table fields are as follow:");
         $td .= "\n\n";
         my $ff = $table_spec->{fields};
