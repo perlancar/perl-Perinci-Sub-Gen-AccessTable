@@ -7,7 +7,7 @@ use experimental 'smartmatch';
 use Log::Any '$log';
 
 use List::Util qw(shuffle);
-use Locale::TextDomain 'Perinci-Sub-Gen-AccessTable';
+use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
