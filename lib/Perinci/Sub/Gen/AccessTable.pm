@@ -11,7 +11,7 @@ use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
-use POSIX qw(locale_h);
+use SHARYANTO::Locale::Util qw(:locale_h);
 use Scalar::Util qw(reftype);
 #use SHARYANTO::String::Util qw(trim_blank_lines);
 
