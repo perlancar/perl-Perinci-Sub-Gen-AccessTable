@@ -1,6 +1,7 @@
 use 5.010;
 use strict;
 use warnings;
+use experimental 'smartmatch';
 use Log::Any '$log';
 
 use Perinci::Sub::Gen::AccessTable qw(gen_read_table_func);
