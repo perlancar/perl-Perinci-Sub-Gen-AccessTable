@@ -80,12 +80,14 @@ sub gen_test_data {
 
     my $table_spec = {
         fields => {
-            s  => {schema=>'str*'   , index=>0, filterable_regex=>1, },
-            s2 => {schema=>'str*'   , index=>1, filterable=>0, },
-            s3 => {schema=>'str*'   , index=>2, },
-            i  => {schema=>'int*'   , index=>3, },
-            f  => {schema=>'float*' , index=>4, },
-            a  => {schema=>'array*' , index=>5, sortable=>0, },
+            # reminder: we still test the old 'index' property, support for it
+            # will be removed someday
+            s  => {schema=>'str*'   , pos=>0, filterable_regex=>1, },
+            s2 => {schema=>'str*'   , pos=>1, filterable=>0, },
+            s3 => {schema=>'str*'   , pos=>2, },
+            i  => {schema=>'int*'   , pos=>3, },
+            f  => {schema=>'float*' , pos=>4, },
+            a  => {schema=>'array*' , pos=>5, sortable=>0, },
             b  => {schema=>'bool*'  , index=>6, },
         },
         pk => 's',
