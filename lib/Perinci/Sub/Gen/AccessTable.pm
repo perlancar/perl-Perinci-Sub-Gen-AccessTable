@@ -1044,6 +1044,8 @@ _
             summary => 'Table specification',
             description => <<'_',
 
+See `SHARYANTO::TableSpec` for more details.
+
 A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
 field specification with field name as keys, while 'pk' specifies which field is
 to be designated as the primary key. Currently only single-field PK is allowed.
