@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.31     2014-03-27 (SHARYANTO)
+
+         - No functional changes.
+
+         - Rebuild to fix POD.
+
+
 0.30     2014-01-09 (SHARYANTO)
 
          - No functional changes. Use SHARYANTO::Locale::Util instead of POSIX.
