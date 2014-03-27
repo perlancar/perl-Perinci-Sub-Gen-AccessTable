@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.32     2014-03-27 (SHARYANTO)
+
+         - Now follow SHARYANTO::TableSpec 1.0.1 specification. Note that the
+           'index' property in field specification is now renamed to 'pos' in
+           the TableSpec spec, but this module will support both for some time.
+
+
 0.31     2014-03-27 (SHARYANTO)
 
          - No functional changes.
