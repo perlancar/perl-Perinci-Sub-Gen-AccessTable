@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.33     2014-03-28 (SHARYANTO)
+
+         - Generate result/table property in function metadata.
+
+
 0.32     2014-03-27 (SHARYANTO)
 
          - Now follow SHARYANTO::TableSpec 1.0.1 specification. Note that the

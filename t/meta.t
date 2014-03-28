@@ -66,6 +66,8 @@ test_gen(
         my $meta = $res->[2]{meta};
         my $args = $meta->{args};
 
+        ok($meta->{result}{table}, "result/table property generated");
+
         for (qw/b b.is/) {
             ok($args->{$_}, "boolean filter arg '$_' generated");
         }

@@ -153,6 +153,11 @@ sub _gen_meta {
         summary => $opts->{summary} // $table_spec->{summary} // "REPLACE ME",
         description => $opts->{description} // "REPLACE ME",
         args => {},
+        result => {
+            table => {
+                spec => $table_spec,
+            },
+        },
     };
 
     _add_table_desc_to_func_description($func_meta, $table_spec, $opts);
@@ -895,19 +900,7 @@ sub _gen_func {
         my $resmeta = {};
         my $res = [200, "OK", \@r, $resmeta];
 
-        my %rfopts = (
-            table_column_orders  => [$query->{requested_fields}],
-            # bool needs display hints
-            table_column_formats => [{
-                map { $_ => [[bool => {type=>'check'}]] }
-                    grep { $fspecs->{$_}{schema}[0] eq 'bool' }
-                        @{$query->{requested_fields}}
-                    }],
-        );
-        $resmeta->{result_format_options} = {
-            text          => \%rfopts,
-            "text-pretty" => \%rfopts,
-        };
+        $resmeta->{'table.fields'} = [$query->{requested_fields}];
 
         for ('before_return') {
             $hookargs{_func_res} = $res;
