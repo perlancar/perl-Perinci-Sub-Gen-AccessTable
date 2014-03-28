@@ -4,6 +4,9 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
          - Generate result/table property in function metadata.
 
+         - Replace 'result_format_options' with 'table.fields' in result
+           metadata.
+
 
 0.32     2014-03-27 (SHARYANTO)
 
