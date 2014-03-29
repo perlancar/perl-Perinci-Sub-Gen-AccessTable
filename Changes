@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.34     2014-03-29 (SHARYANTO)
+
+         - Bugfix: 'table.fields' result metadata had an extra array level.
+
+
 0.33     2014-03-28 (SHARYANTO)
 
          - Generate result/table property in function metadata.
