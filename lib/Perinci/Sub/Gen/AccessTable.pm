@@ -900,7 +900,7 @@ sub _gen_func {
         my $resmeta = {};
         my $res = [200, "OK", \@r, $resmeta];
 
-        $resmeta->{'table.fields'} = [$query->{requested_fields}];
+        $resmeta->{'table.fields'} = $query->{requested_fields};
 
         for ('before_return') {
             $hookargs{_func_res} = $res;
