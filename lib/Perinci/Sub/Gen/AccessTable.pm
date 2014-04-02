@@ -100,48 +100,6 @@ sub _add_arg {
     $func_meta->{args}{$arg_name} = $arg_spec;
 }
 
-sub _add_table_desc_to_func_description {
-    my ($func_meta, $table_spec, $opts) = @_;
-    my $langs = $opts->{langs};
-
-    my $orig_locale = setlocale(LC_ALL);
-
-    for my $lang (@$langs) {
-        setlocale(LC_ALL, $lang) or warn "Can't setlocale $lang";
-        my $td = __("Data is in table form. Table fields are as follow:");
-        $td .= "\n\n";
-        my $ff = $table_spec->{fields};
-        # reminder: index property is for older spec, will be removed someday
-        for my $fn (sort {($ff->{$a}{pos}//$ff->{$a}{index}//0) <=>
-                              ($ff->{$b}{pos}//$ff->{$b}{index}//0)}
-                        keys %$ff) {
-            my $f  = $ff->{$fn};
-            my $fo = Perinci::Object::Metadata->new($f);
-            my $sum = $fo->langprop("summary", {lang=>$lang});
-            $td .=
-                join("",
-                     "  - *$fn*",
-                     $table_spec->{pk} eq $fn ?
-                         " (".__x("ID field").")":"",
-                     $sum ? ": $sum" : "",
-                     "\n\n");
-            my $desc = $fo->langprop("description", {lang=>$lang});
-            if ($desc) {
-                $desc =~ s/(\r?\n)+\z//;
-                $desc =~ s/^/    /mg;
-                $td .= "$desc\n\n";
-            }
-        }
-
-        my $key = "description" . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
-        $func_meta->{$key} //= "";
-        $func_meta->{$key} =~ s/(\r?\n)+\z//;
-        $func_meta->{$key} .= "\n\n" . $td;
-    }
-
-    setlocale(LC_ALL, $orig_locale);
-}
-
 sub _gen_meta {
     my ($table_spec, $opts) = @_;
     my $langs = $opts->{langs};
@@ -159,8 +117,6 @@ sub _gen_meta {
             },
         },
     };
-
-    _add_table_desc_to_func_description($func_meta, $table_spec, $opts);
 
     my $func_args = $func_meta->{args};
 
