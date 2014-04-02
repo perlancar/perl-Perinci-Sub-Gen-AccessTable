@@ -127,6 +127,7 @@ sub _add_table_desc_to_func_description {
                      "\n\n");
             my $desc = $fo->langprop("description", {lang=>$lang});
             if ($desc) {
+                $desc =~ s/(\r?\n)+\z//;
                 $desc =~ s/^/    /mg;
                 $td .= "$desc\n\n";
             }
@@ -134,9 +135,8 @@ sub _add_table_desc_to_func_description {
 
         my $key = "description" . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
         $func_meta->{$key} //= "";
-        $func_meta->{$key} .= "\n" unless $func_meta->{$key} =~ /\n\z/;
-        $func_meta->{$key} .= "\n" unless $func_meta->{$key} !~ /\S/;
-        $func_meta->{$key} .= $td;
+        $func_meta->{$key} =~ s/(\r?\n)+\z//;
+        $func_meta->{$key} .= "\n\n" . $td;
     }
 
     setlocale(LC_ALL, $orig_locale);
