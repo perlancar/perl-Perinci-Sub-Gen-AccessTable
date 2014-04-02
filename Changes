@@ -1,5 +1,15 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.35     2014-04-02 (SHARYANTO)
+
+         [REMOVED FEATURES]
+
+         - No longer add table description to function's description. Instead,
+           generated help/documentation on table structure will be produced by
+           Perinci::CmdLine's help hooks or corresponding Perinci::To::Doc's
+           hook. See Perinci::Sub::Property::result::table.
+
+
 0.34     2014-03-29 (SHARYANTO)
 
          - Bugfix: 'table.fields' result metadata had an extra array level.
