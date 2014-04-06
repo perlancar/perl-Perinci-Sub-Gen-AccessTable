@@ -242,7 +242,7 @@ _
         );
         unless ($func_args->{$fname}) {
             $func_args->{$fname} =
-                Data::Clone::clone($func_args->{"$fname.is"});
+                SHARYANTO::MaybeXS::clone($func_args->{"$fname.is"});
         }
         _add_arg(
             func_meta   => $func_meta,
@@ -1161,7 +1161,7 @@ _
     },
 };
 sub gen_read_table_func {
-    require Data::Clone;
+    require SHARYANTO::MaybeXS;
 
     my %args = @_;
 
@@ -1197,7 +1197,7 @@ sub gen_read_table_func {
         return [400, "Invalid table_spec: pk not in fields"];
 
     # duplicate and make each field's schema normalized
-    $table_spec = Data::Clone::clone($table_spec);
+    $table_spec = SHARYANTO::MaybeXS::clone($table_spec);
     for my $fspec (values %{$table_spec->{fields}}) {
         $fspec->{schema} //= 'any';
         $fspec->{schema} = __parse_schema($fspec->{schema});
