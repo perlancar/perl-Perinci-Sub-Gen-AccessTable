@@ -6,6 +6,7 @@ use warnings;
 use experimental 'smartmatch';
 use Log::Any '$log';
 
+use Function::Fallback::CoreOrPP qw(clone);
 use List::Util qw(shuffle);
 use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
@@ -242,7 +243,7 @@ _
         );
         unless ($func_args->{$fname}) {
             $func_args->{$fname} =
-                SHARYANTO::MaybeXS::clone($func_args->{"$fname.is"});
+                clone($func_args->{"$fname.is"});
         }
         _add_arg(
             func_meta   => $func_meta,
@@ -1161,8 +1162,6 @@ _
     },
 };
 sub gen_read_table_func {
-    require SHARYANTO::MaybeXS;
-
     my %args = @_;
 
     # XXX schema
@@ -1197,7 +1196,7 @@ sub gen_read_table_func {
         return [400, "Invalid table_spec: pk not in fields"];
 
     # duplicate and make each field's schema normalized
-    $table_spec = SHARYANTO::MaybeXS::clone($table_spec);
+    $table_spec = clone($table_spec);
     for my $fspec (values %{$table_spec->{fields}}) {
         $fspec->{schema} //= 'any';
         $fspec->{schema} = __parse_schema($fspec->{schema});
