@@ -64,16 +64,17 @@ sub gen_test_data {
     my ($aoa_data) = @_;
 
     my $table_data = [
-        {s=>'a1', s2=>'', s3=>'a' , i=>1 , f=>0.1, a=>[qw//]     , b=>0},
-        {s=>'b1', s2=>'', s3=>'aa', i=>2 , f=>0.2, a=>[qw/t2/]   , b=>0},
-        {s=>'a3', s2=>'', s3=>'aa', i=>4 , f=>1.1, a=>[qw/t1 t2/], b=>1},
-        {s=>'a2', s2=>'', s3=>'a' , i=>-3, f=>1.2, a=>[qw/t1/]   , b=>1},
+        {s=>'a1', s2=>'', s3=>'a' , i=>1 , f=>0.1, a=>[qw//]     , b=>0, d=>'2014-01-02'},
+        {s=>'b1', s2=>'', s3=>'aa', i=>2 , f=>0.2, a=>[qw/t2/]   , b=>0, d=>'2014-02-02'},
+        {s=>'a3', s2=>'', s3=>'aa', i=>4 , f=>1.1, a=>[qw/t1 t2/], b=>1, d=>'2013-01-02'},
+        {s=>'a2', s2=>'', s3=>'a' , i=>-3, f=>1.2, a=>[qw/t1/]   , b=>1, d=>'2013-02-02'},
     ];
     if ($aoa_data) {
         for my $r (@$table_data) {
             $r = [
                 $r->{s}, $r->{s2}, $r->{s3},
                 $r->{i}, $r->{f},  $r->{a},  $r->{b},
+                $r->{d},
             ];
         }
     }
@@ -89,6 +90,7 @@ sub gen_test_data {
             f  => {schema=>'float*' , pos=>4, },
             a  => {schema=>'array*' , pos=>5, sortable=>0, },
             b  => {schema=>'bool*'  , index=>6, },
+            d  => {schema=>'date*'  , index=>7, },
         },
         pk => 's',
     };

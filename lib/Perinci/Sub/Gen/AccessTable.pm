@@ -813,7 +813,7 @@ sub _gen_func {
                     my $dopn = coerce_date($opn);
                     my $d = coerce_date($r_h->{$f});
                     next REC unless $dopn && $d;
-                    next REC unless DateTime->($d, $dopn) <  0;
+                    next REC unless DateTime->compare($d, $dopn) <  0;
                 } elsif ($op eq '<' ) {
                     next REC unless $r_h->{$f} <  $opn;
 

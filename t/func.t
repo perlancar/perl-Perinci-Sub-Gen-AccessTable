@@ -183,6 +183,14 @@ test_gen(
         test_query($f,{"s.matches"=>'[12]'}, 3, 'str filter: F.matches');
         test_query($f,{"s.not_matches"=>'[12]'},1, 'str filter: F.not_matches');
 
+        test_query($f, {"d.max"=>"2014-01-02"}, 3, 'date filter: F.min');
+        test_query($f, {"d.min"=>"2014-01-02"}, 2, 'date filter: F.max');
+        test_query($f, {"d.xmax"=>"2014-01-02"}, 2, 'date filter: F.xmin');
+        test_query($f, {"d.xmin"=>"2014-01-02"}, 1, 'date filter: F.xmax');
+        test_query($f, {"d.is"=>"2014-01-02"}, 1, 'date filter: F.is');
+        test_query($f, {"d.isnt"=>"2014-01-02"}, 3, 'date filter: F.isnt');
+        test_query($f, {"d.isnt"=>"2014-01-32"}, 0, 'date filter: invalid filter operand');
+
         test_query($f, {b=>0, "i.min"=>2}, 1, 'multiple filters');
 
     },

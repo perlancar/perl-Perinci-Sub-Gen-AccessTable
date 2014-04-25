@@ -94,6 +94,9 @@ test_gen(
         for (qw/s3.matches s3.not_matches/) {
             ok(!$args->{$_}, "str filter arg '$_' NOT generated");
         }
+        for (qw/d d.is d.in d.not_in d.min d.xmin d.max d.xmax/) {
+            ok($args->{$_}, "date filter arg '$_' generated");
+        }
     },
 );
 
