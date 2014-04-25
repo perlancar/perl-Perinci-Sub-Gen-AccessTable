@@ -306,7 +306,7 @@ _
                                        "is an array/list which does not contain specified value"),
             );
         }
-        if ($ftype =~ /^(?:int|float|str)$/) { # XXX all Comparable types
+        if ($ftype =~ /^(?:int|float|str|date)$/) { # XXX all Comparable types
             _add_arg(
                 func_meta   => $func_meta,
                 langs       => $langs,
@@ -440,106 +440,113 @@ sub __parse_query {
     $query->{requested_fields} = \@requested_fields;
 
     my @filter_fields;
-    my @filters; # ([field, operator, operand...])
+    my @filters; # ([field, field-type, operator, operand...])
 
     for my $f (grep {$fspecs->{$_}{schema}[0] eq 'bool'} @fields) {
         my $fspec = $fspecs->{$f};
+        my $ftype   = $fspec->{schema}[0];
         my $exists;
         if (defined $args->{"$f.is"}) {
             $exists++;
-            push @filters, [$f, "truth", $args->{"$f.is"}];
+            push @filters, [$f, $ftype, "truth", $args->{"$f.is"}];
         } elsif (defined $args->{"$f.isnt"}) {
             $exists++;
-            push @filters, [$f, "truth", !$args->{"$f.isnt"}];
+            push @filters, [$f, $ftype, "truth", !$args->{"$f.isnt"}, $ftype];
         } elsif (defined($args->{$f}) && __is_filter_arg($f, $func_meta)) {
             $exists++;
-            push @filters, [$f, "truth", $args->{$f}];
+            push @filters, [$f, $ftype, "truth", $args->{$f}, $ftype];
         }
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
     for my $f (grep {$fspecs->{$_}{schema}[0] eq 'array'} @fields) {
+        my $fspec = $fspecs->{$f};
+        my $ftype   = $fspec->{schema}[0];
         my $exists;
         if (defined $args->{"$f.has"}) {
             $exists++;
-            push @filters, [$f, "~~", $args->{"$f.has"}];
+            push @filters, [$f, $ftype, "~~", $args->{"$f.has"}, $ftype];
         }
         if (defined $args->{"$f.lacks"}) {
             $exists++;
-            push @filters, [$f, "!~~", $args->{"$f.lacks"}];
+            push @filters, [$f, $ftype, "!~~", $args->{"$f.lacks"}, $ftype];
         }
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
     for my $f (grep {!($fspecs->{$_}{schema}[0] ~~ ['array','bool'])} @fields) {
+        my $fspec = $fspecs->{$f};
+        my $ftype   = $fspec->{schema}[0];
         my $exists;
         if (defined $args->{"$f.in"}) {
             $exists++;
-            push @filters, [$f, "in", $args->{"$f.in"}];
+            push @filters, [$f, $ftype, "in", $args->{"$f.in"}];
         }
         if (defined $args->{"$f.not_in"}) {
             $exists++;
-            push @filters, [$f, "not_in", $args->{"$f.not_in"}];
+            push @filters, [$f, $ftype, "not_in", $args->{"$f.not_in"}];
         }
     }
 
-    for my $f (grep {$fspecs->{$_}{schema}[0] =~ /^(int|float|str)$/}
+    for my $f (grep {$fspecs->{$_}{schema}[0] =~ /^(int|float|str|date)$/}
                    @fields) { # XXX all Comparable
-        my $exists;
         my $fspec = $fspecs->{$f};
         my $ftype = $fspec->{schema}[0];
+        my $exists;
         if (defined $args->{"$f.is"}) {
             $exists++;
             push @filters,
-                [$f, $ftype eq 'str' ? "eq" : "==", $args->{"$f.is"}];
+                [$f, $ftype, "==", $args->{"$f.is"}];
         } elsif (defined($args->{$f}) && __is_filter_arg($f,  $func_meta)) {
             $exists++;
-            push @filters, [$f, $ftype eq 'str' ? "eq":"==", $args->{$f}];
+            push @filters, [$f, $ftype, "==", $args->{$f}];
         }
         if (defined $args->{"$f.isnt"}) {
             $exists++;
             push @filters,
-                [$f, $ftype eq 'str' ? "ne" : "!=", $args->{"$f.isnt"}];
+                [$f, $ftype, "!=", $args->{"$f.isnt"}];
         } elsif (defined($args->{$f}) && __is_filter_arg($f,  $func_meta)) {
             $exists++;
-            push @filters, [$f, $ftype eq 'str' ? "eq":"==", $args->{$f}];
+            push @filters, [$f, $ftype, "==", $args->{$f}];
         }
         if (defined $args->{"$f.min"}) {
             $exists++;
-            push @filters, [$f, $ftype eq 'str' ? 'ge':'>=', $args->{"$f.min"}];
+            push @filters, [$f, $ftype, '>=', $args->{"$f.min"}];
         }
         if (defined $args->{"$f.max"}) {
             $exists++;
-            push @filters, [$f, $ftype eq 'str' ? 'le':'<=', $args->{"$f.max"}];
+            push @filters, [$f, $ftype, '<=', $args->{"$f.max"}];
         }
         if (defined $args->{"$f.xmin"}) {
             $exists++;
-            push @filters, [$f, $ftype eq 'str' ? 'gt':'>', $args->{"$f.xmin"}];
+            push @filters, [$f, $ftype, '>', $args->{"$f.xmin"}];
         }
         if (defined $args->{"$f.xmax"}) {
             $exists++;
-            push @filters, [$f, $ftype eq 'str' ? 'lt':'<', $args->{"$f.xmax"}];
+            push @filters, [$f, $ftype, '<', $args->{"$f.xmax"}];
         }
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
     for my $f (grep {$fspecs->{$_}{schema}[0] =~ /^str$/} @fields) {
+        my $fspec = $fspecs->{$f};
+        my $ftype = $fspec->{schema}[0];
         my $exists;
         if (defined $args->{"$f.contains"}) {
             $exists++;
-            push @filters, [$f, 'pos', $args->{"$f.contains"}];
+            push @filters, [$f, $ftype, 'pos', $args->{"$f.contains"}];
         }
         if (defined $args->{"$f.not_contains"}) {
             $exists++;
-            push @filters, [$f, '!pos', $args->{"$f.not_contains"}];
+            push @filters, [$f, $ftype, '!pos', $args->{"$f.not_contains"}];
         }
         if (defined $args->{"$f.matches"}) {
             $exists++;
-            push @filters, [$f, '=~', $args->{"$f.matches"}];
+            push @filters, [$f, $ftype, '=~', $args->{"$f.matches"}];
         }
         if (defined $args->{"$f.not_matches"}) {
             $exists++;
-            push @filters, [$f, '!~', $args->{"$f.not_matches"}];
+            push @filters, [$f, $ftype, '!~', $args->{"$f.not_matches"}];
         }
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
@@ -549,7 +556,7 @@ sub __parse_query {
     my $cff = $opts->{custom_filters} // {};
     while (my ($cfn, $cf) = each %$cff) {
         next unless defined $args->{$cfn};
-        push @filters, [$cf->{fields}, 'call', [$cf->{code}, $args->{$cfn}]];
+        push @filters, [$cf->{fields}, undef, 'call', [$cf->{code}, $args->{$cfn}]];
         for (@{$cf->{fields} // []}) {
             push @filter_fields, $_ if !($_ ~~ @filter_fields);
         }
@@ -706,6 +713,12 @@ sub _gen_func {
         my $q = $query->{q};
         my $search_re = $query->{search_re};
 
+        if (grep { $_->[1] eq 'date' } @{ $query->{filters} }) {
+            require DateTime;
+            require Data::Sah::Util::Type;
+            Data::Sah::Util::Type->import('coerce_date');
+        }
+
       REC:
         for my $r0 (@$data) {
             my $r_h;
@@ -727,7 +740,8 @@ sub _gen_func {
             goto SKIP_FILTER if $metadata->{filtered};
 
             for my $filter (@{$query->{filters}}) {
-                my ($f, $op, $opn) = @$filter;
+                my ($f, $ftype, $op, $opn) = @$filter;
+                my $stringy = $ftype eq 'str';
                 if ($op eq 'truth') {
                     next REC if $r_h->{$f} xor $opn;
                 } elsif ($op eq '~~') {
@@ -742,20 +756,71 @@ sub _gen_func {
                     next REC unless $r_h->{$f} ~~ @$opn;
                 } elsif ($op eq 'not_in') {
                     next REC if $r_h->{$f} ~~ @$opn;
-                } elsif ($op eq 'eq') { next REC unless $r_h->{$f} eq $opn
-                } elsif ($op eq '==') { next REC unless $r_h->{$f} == $opn
-                } elsif ($op eq 'ne') { next REC unless $r_h->{$f} ne $opn
-                } elsif ($op eq '!=') { next REC unless $r_h->{$f} != $opn
-                } elsif ($op eq 'ge') { next REC unless $r_h->{$f} ge $opn
-                } elsif ($op eq '>=') { next REC unless $r_h->{$f} >= $opn
-                } elsif ($op eq 'gt') { next REC unless $r_h->{$f} gt $opn
-                } elsif ($op eq '>' ) { next REC unless $r_h->{$f} >  $opn
-                } elsif ($op eq 'le') { next REC unless $r_h->{$f} le $opn
-                } elsif ($op eq '<=') { next REC unless $r_h->{$f} <= $opn
-                } elsif ($op eq 'lt') { next REC unless $r_h->{$f} lt $opn
-                } elsif ($op eq '<' ) { next REC unless $r_h->{$f} <  $opn
-                } elsif ($op eq '=~') { next REC unless $r_h->{$f} =~ $opn
-                } elsif ($op eq '!~') { next REC unless $r_h->{$f} !~ $opn
+
+                } elsif ($op eq '==' && $stringy) {
+                    next REC unless $r_h->{$f} eq $opn;
+                } elsif ($op eq '==' && $ftype eq 'date') {
+                    my $dopn = coerce_date($opn);
+                    my $d = coerce_date($r_h->{$f});
+                    next REC unless $dopn && $d;
+                    next REC unless DateTime->compare($d, $dopn) == 0;
+                } elsif ($op eq '==') {
+                    next REC unless $r_h->{$f} == $opn;
+
+                } elsif ($op eq '!=' && $stringy) {
+                    next REC unless $r_h->{$f} ne $opn;
+                } elsif ($op eq '!=' && $ftype eq 'date') {
+                    my $dopn = coerce_date($opn);
+                    my $d = coerce_date($r_h->{$f});
+                    next REC unless $dopn && $d;
+                    next REC unless DateTime->compare($d, $dopn) != 0;
+                } elsif ($op eq '!=') {
+                    next REC unless $r_h->{$f} != $opn;
+
+                } elsif ($op eq '>=' && $stringy) {
+                    next REC unless $r_h->{$f} ge $opn;
+                } elsif ($op eq '>=' && $ftype eq 'date') {
+                    my $dopn = coerce_date($opn);
+                    my $d = coerce_date($r_h->{$f});
+                    next REC unless $dopn && $d;
+                    next REC unless DateTime->compare($d, $dopn) >= 0;
+                } elsif ($op eq '>=') {
+                    next REC unless $r_h->{$f} >= $opn;
+
+                } elsif ($op eq '>'  && $stringy) {
+                    next REC unless $r_h->{$f} gt $opn;
+                } elsif ($op eq '>'  && $ftype eq 'date') {
+                    my $dopn = coerce_date($opn);
+                    my $d = coerce_date($r_h->{$f});
+                    next REC unless $dopn && $d;
+                    next REC unless DateTime->compare($d, $dopn) >  0;
+                } elsif ($op eq '>' ) {
+                    next REC unless $r_h->{$f} >  $opn;
+
+                } elsif ($op eq '<=' && $stringy) {
+                    next REC unless $r_h->{$f} le $opn;
+                } elsif ($op eq '<=' && $ftype eq 'date') {
+                    my $dopn = coerce_date($opn);
+                    my $d = coerce_date($r_h->{$f});
+                    next REC unless $dopn && $d;
+                    next REC unless DateTime->compare($d, $dopn) <= 0;
+                } elsif ($op eq '<=') {
+                    next REC unless $r_h->{$f} <= $opn;
+
+                } elsif ($op eq '<'  && $stringy) {
+                    next REC unless $r_h->{$f} lt $opn;
+                } elsif ($op eq '<'  && $ftype eq 'date') {
+                    my $dopn = coerce_date($opn);
+                    my $d = coerce_date($r_h->{$f});
+                    next REC unless $dopn && $d;
+                    next REC unless DateTime->($d, $dopn) <  0;
+                } elsif ($op eq '<' ) {
+                    next REC unless $r_h->{$f} <  $opn;
+
+                } elsif ($op eq '=~') {
+                    next REC unless $r_h->{$f} =~ $opn;
+                } elsif ($op eq '!~') {
+                    next REC unless $r_h->{$f} !~ $opn;
                 } elsif ($op eq 'pos') {
                     next REC unless index($r_h->{$f}, $opn) >= 0;
                 } elsif ($op eq '!pos') {
