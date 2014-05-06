@@ -1,5 +1,13 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.38     2014-05-06 (SHARYANTO)
+
+         - Add option: extra_args.
+
+         - Add options to disable some aspects:
+           enable_{paging,ordering,random_ordering,filtering,field_selection}.
+
+
 0.37     2014-04-25 (SHARYANTO)
 
          - Support 'date' type.
