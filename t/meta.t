@@ -59,7 +59,6 @@ test_gen(
     name => 'spec generation',
     table_data => [],
     table_spec => $table_spec,
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
@@ -101,11 +100,57 @@ test_gen(
 );
 
 test_gen(
+    name => 'disable filtering',
+    table_data => [],
+    table_spec => $table_spec,
+    other_args => {enable_filtering=>0},
+    post_test => sub {
+        my ($res) = @_;
+        my $meta = $res->[2]{meta};
+        ok(!$meta->{args}{'b'}, 'b');
+        ok(!$meta->{args}{'b.is'}, 'b.is');
+        ok(!$meta->{args}{s3}, 's3');
+    },
+);
+
+test_gen(
     name => 'disable search',
     table_data => [],
     table_spec => $table_spec,
     other_args => {enable_search=>0},
-    status => 200,
+    # test_gen will test that the 'q' argument is not produced
+);
+
+test_gen(
+    name => 'disable field selection',
+    table_data => [],
+    table_spec => $table_spec,
+    other_args => {enable_field_selection=>0},
+    # test_gen will test that the 'fields' argument is not produced
+);
+
+test_gen(
+    name => 'disable ordering',
+    table_data => [],
+    table_spec => $table_spec,
+    other_args => {enable_ordering=>0},
+    # test_gen will test that the 'sort' & 'random' arguments are not produced
+);
+
+test_gen(
+    name => 'disable random ordering',
+    table_data => [],
+    table_spec => $table_spec,
+    other_args => {enable_ordering=>1, enable_random_ordering=>0},
+    # test_gen will test that the 'random' argument is not produced
+);
+
+test_gen(
+    name => 'disable paging',
+    table_data => [],
+    table_spec => $table_spec,
+    other_args => {enable_paging=>0},
+    # test_gen will test that the 'result_*' arguments are not produced
 );
 
 test_gen(
@@ -113,7 +158,6 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {default_sort=>"s"},
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
@@ -137,7 +181,6 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {default_random=>1},
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
@@ -154,7 +197,6 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {default_fields=>'s,b'},
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
@@ -182,7 +224,6 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {default_detail=>1},
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
@@ -205,7 +246,6 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {default_with_field_names=>0},
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
@@ -233,7 +273,6 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {default_result_limit=>2},
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
@@ -248,7 +287,6 @@ test_gen(
     table_data => $table_data,
     table_spec => $table_spec,
     other_args => {extra_args => {foo=>{}, bar=>{schema=>'int*'}}},
-    status => 200,
     post_test => sub {
         my ($res) = @_;
         my $meta = $res->[2]{meta};

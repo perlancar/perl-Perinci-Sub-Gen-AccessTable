@@ -31,8 +31,9 @@ sub test_gen {
             ok($eval_err, "dies");
         }
 
-        if ($args{status}) {
-            is($res->[0], $args{status}, "status = $args{status}") or
+        {
+            my $status = $args{status} // 200;
+            is($res->[0], $status, "status = $status") or
                 do { diag explain $res; return };
         }
 
@@ -42,12 +43,40 @@ sub test_gen {
             is(ref($func), 'CODE', 'func returned');
             is(ref($meta), 'HASH', 'meta returned');
             my $args = $meta->{args};
-            for my $a (qw/with_field_names detail fields
-                          sort random result_limit result_start
+            for my $a (qw/with_field_names detail
                          /) {
                 ok($args->{$a}, "common arg '$a' generated");
             }
-            if (!defined($fargs{enable_search}) || $fargs{enable_search}) {
+
+            if (!defined($fargs{enable_field_selection}) || $fargs{enable_field_selection}) {
+                ok( $args->{fields}, "field selection arg 'fields' generated");
+            } else {
+                ok(!$args->{fields}, "field selection arg 'fields' not generated");
+            }
+
+            if (!defined($fargs{enable_paging}) || $fargs{enable_paging}) {
+                ok( $args->{result_limit}, "paging arg 'result_limit' generated");
+                ok( $args->{result_start}, "paging arg 'result_start' generated");
+            } else {
+                ok(!$args->{result_limit}, "paging arg 'result_limit' not generated");
+                ok(!$args->{result_start}, "paging arg 'result_start' not generated");
+            }
+
+            if (!defined($fargs{enable_ordering}) || $fargs{enable_ordering}) {
+                ok( $args->{sort}, "ordering arg 'sort' generated");
+            } else {
+                ok(!$args->{sort}, "ordering arg 'sort' not generated");
+            }
+
+            if ((!defined($fargs{enable_ordering}) || $fargs{enable_ordering}) &&
+                    (!defined($fargs{enable_random_ordering}) || $fargs{enable_random_ordering})) {
+                ok( $args->{random}, "ordering arg 'random' generated");
+            } else {
+                ok(!$args->{random}, "ordering arg 'random' not generated");
+            }
+
+            if ((!defined($fargs{enable_filtering}) || $fargs{enable_filtering}) &&
+                    (!defined($fargs{enable_search}) || $fargs{enable_search})) {
                 ok( $args->{q}, "search arg 'q' generated");
             } else {
                 ok(!$args->{q}, "search arg 'q' not generated");
