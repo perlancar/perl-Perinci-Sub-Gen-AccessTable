@@ -410,6 +410,10 @@ _
         $func_args->{$cfn} = $cf->{meta};
     }
 
+    # extra arguments
+    my $ea = $opts->{extra_args} // {};
+    $func_args->{$_} = $ea->{$_} for keys %$ea;
+
     [200, "OK", $func_meta];
 }
 
@@ -1184,6 +1188,10 @@ should return true if record matches search term.
 
 _
         },
+        extra_args => {
+            schema => ['hash*'],
+            summary => 'Extra arguments for the generated function',
+        },
         custom_filters => {
             schema => [hash => {of=>['hash*' => {keys=>{
                 'code'=>'code*', 'meta'=>'hash*'}}]}],
@@ -1291,6 +1299,7 @@ sub gen_read_table_func {
         case_insensitive_search    => $args{case_insensitive_search} // 1,
         (map { ("default_$_" => $dav->{$_}) } keys %$dav),
         custom_filters             => $cff,
+        extra_args                 => $args{extra_args},
         hooks                      => $args{hooks} // {},
     };
 
@@ -1432,11 +1441,15 @@ It is often not a good idea to expose your database schema directly as API.
 
 =head2 I want my function to accept additional arguments.
 
-You can add arguments to the metadata by yourself, e.g.:
+You can use the C<extra_args> argument:
 
- our %SPEC;
- gen_read_table_func(name => 'myfunc', ...);
- $SPEC{myfunc}{args}{add1} = {...};
+ gen_read_table_func(
+     name => 'myfunc',
+     extra_args => {
+         foo => {schema=>'int*'},
+         bar => {summary => 'Yet another arg for myfunc', schema=>'str*'},
+     },
+ );
 
 As for the implementation, you can specify hooks to do things with the extra
 arguments.

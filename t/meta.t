@@ -243,5 +243,19 @@ test_gen(
     },
 );
 
+test_gen(
+    name => 'option: extra_args',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {extra_args => {foo=>{}, bar=>{schema=>'int*'}}},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $meta = $res->[2]{meta};
+        is_deeply($meta->{args}{foo}, {}, "foo");
+        is_deeply($meta->{args}{bar}, {schema=>'int*'}, "bar");
+    },
+);
+
 DONE_TESTING:
 done_testing();
