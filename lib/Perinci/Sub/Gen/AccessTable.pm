@@ -1038,7 +1038,7 @@ _
         %Perinci::Sub::Gen::common_args,
         table_data => {
             req => 1,
-            schema => 'any*',
+            schema => ['any*' => of => ['array*', 'code*']],
             summary => 'Data',
             description => <<'_',
 
