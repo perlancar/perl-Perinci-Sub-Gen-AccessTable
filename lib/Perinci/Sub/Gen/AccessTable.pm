@@ -1280,6 +1280,12 @@ case, the function will return with this return value.
 
 _
         },
+    }, # args
+    result => {
+        summary => 'A hash containing generated function, metadata',
+        schema => 'hash*',
+        description => <<'_',
+_
     },
 };
 sub gen_read_table_func {
