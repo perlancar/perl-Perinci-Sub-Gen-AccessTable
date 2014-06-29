@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.39     2014-06-29 (SHARYANTO)
+
+         - Implement TableDef 1.0.4's include_by_default by introducing
+           'with.FIELD' arguments.
+
+
 0.38     2014-05-06 (SHARYANTO)
 
          - Add option: extra_args.
