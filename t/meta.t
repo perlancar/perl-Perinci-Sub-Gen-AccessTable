@@ -295,5 +295,35 @@ test_gen(
     },
 );
 
+{
+    my $table_spec = {
+        fields => {
+            f1 => {schema=>'str*', pos=>0 },
+            f2 => {schema=>'str*', pos=>1 },
+            f3 => {schema=>'str*', pos=>2, include_by_default=>0 },
+        },
+        pk => 'f1',
+    };
+    my $table_data = [[qw/r11 r12 r13/]];
+
+    test_gen(
+        name => 'field spec property: include_by_default=0',
+        table_data => $table_data,
+        table_spec => $table_spec,
+        post_test => sub {
+            my ($res) = @_;
+            my $func = $res->[2]{code};
+            my $meta = $res->[2]{meta};
+            ok($meta->{args}{'with.f3'}, "'with.F' arg generated");
+            is_deeply($func->(detail=>1, with_field_names=>0)->[2],
+                      [[qw/r11 r12/]],
+                      'f3 not included by default');
+            is_deeply($func->(detail=>1,with_field_names=>0, 'with.f3'=>1)->[2],
+                      [[qw/r11 r12 r13/]],
+                      'f3 included via with.f3');
+        },
+    );
+}
+
 DONE_TESTING:
 done_testing();
