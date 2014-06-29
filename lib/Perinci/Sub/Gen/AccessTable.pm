@@ -231,6 +231,18 @@ _
         next unless $opts->{enable_filtering};
         next if defined($fspec->{filterable}) && !$fspec->{filterable};
 
+        unless ($fspec->{include_by_default} // 1) {
+            _add_arg(
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "with.$fname",
+                type        => "bool",
+                default     => 0,
+                cat_name    => "field-selection",
+                cat_text    => N__('field selection'),
+                summary     => N__("Show field '{field}'"),
+            );
+        }
         _add_arg(
             func_meta   => $func_meta,
             langs       => $langs,
@@ -432,7 +444,10 @@ sub __parse_query {
 
     my @requested_fields;
     if ($args->{detail}) {
-        @requested_fields = @fields;
+        @requested_fields = grep {
+            ($fspecs->{$_}{include_by_default} // 1) ||
+                $args->{"with.$_"}
+            } @fields;
         $args->{with_field_names} //= 1;
     } elsif ($args->{fields}) {
         @requested_fields = @{ $args->{fields} };
