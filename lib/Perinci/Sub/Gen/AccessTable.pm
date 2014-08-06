@@ -1,5 +1,8 @@
 package Perinci::Sub::Gen::AccessTable;
 
+# DATE
+# VERSION
+
 use 5.010001;
 use strict;
 use warnings;
@@ -12,15 +15,13 @@ use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
-use SHARYANTO::Locale::Util qw(:locale_h);
+use SHARYANTO::Locale::Util qw(:locale_h setlocale);
 use Scalar::Util qw(reftype);
 #use SHARYANTO::String::Util qw(trim_blank_lines);
 
 require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
-
-# VERSION
 
 our %SPEC;
 
