@@ -1,5 +1,13 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.41     2014-09-17 (PERLANCAR)
+
+         - [Bugfix] did not use SHARYANTO::Locale::Util's setlocale().
+
+         - [Build] Add missing dependency to
+           Perinci::Sub::Property::result::table.
+
+
 0.40     2014-07-22 (SHARYANTO)
 
          - No functional changes.
