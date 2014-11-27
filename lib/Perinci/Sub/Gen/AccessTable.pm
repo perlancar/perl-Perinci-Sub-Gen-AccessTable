@@ -1505,8 +1505,6 @@ paging. The resulting function can then be run via command-line using
 L<Perinci::CmdLine> (as demonstrated in Synopsis), or served via HTTP using
 L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
 
-This module uses L<Log::Any> for logging.
-
 
 =head1 CAVEATS
 
