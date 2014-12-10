@@ -11,11 +11,11 @@ use Log::Any '$log';
 
 use Function::Fallback::CoreOrPP qw(clone);
 use List::Util qw(shuffle);
+use Locale::Set qw(:locale_h setlocale);
 use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
-use SHARYANTO::Locale::Util qw(:locale_h setlocale);
 use Scalar::Util qw(reftype);
 #use String::Trim::More qw(trim_blank_lines);
 
