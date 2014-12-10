@@ -1,5 +1,13 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.42    2014-12-10 (PERLANCAR)
+
+	- No functional changes.
+
+	- Use new name of renamed/split module SHARYANTO::Locale::Util ->
+	  Locale::Set.
+
+
 0.41     2014-09-17 (PERLANCAR)
 
          - [Bugfix] did not use SHARYANTO::Locale::Util's setlocale().
