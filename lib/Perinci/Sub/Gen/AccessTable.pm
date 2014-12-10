@@ -17,7 +17,7 @@ use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
 use SHARYANTO::Locale::Util qw(:locale_h setlocale);
 use Scalar::Util qw(reftype);
-#use SHARYANTO::String::Util qw(trim_blank_lines);
+#use String::Trim::More qw(trim_blank_lines);
 
 require Exporter;
 our @ISA       = qw(Exporter);
