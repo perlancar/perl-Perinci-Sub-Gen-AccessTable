@@ -1400,7 +1400,7 @@ sub gen_read_table_func {
 }
 
 1;
-# ABSTRACT: Generate function (and its Rinci metadata) to access table data
+# ABSTRACT:
 
 =head1 SYNOPSIS
 
