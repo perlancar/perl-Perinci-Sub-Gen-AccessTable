@@ -738,8 +738,8 @@ sub _gen_func {
 
         if (grep { $_->[1] eq 'date' } @{ $query->{filters} }) {
             require DateTime;
-            require Data::Sah::Util::Type;
-            Data::Sah::Util::Type->import('coerce_date');
+            require Data::Sah::Util::Type::Date;
+            Data::Sah::Util::Type::Date->import('coerce_date');
         }
 
       REC:
