@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.43    2015-01-02 (PERLANCAR)
+
+	- Adjust to Data::Sah 0.37 (Data::Sah::Util::Type module renamed to
+	  Data::Sah::Util::Typee::Date).
+
+
 0.42    2014-12-10 (PERLANCAR)
 
 	- No functional changes.
