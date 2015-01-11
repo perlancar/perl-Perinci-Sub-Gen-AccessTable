@@ -16,7 +16,6 @@ use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
-use Scalar::Util qw(reftype);
 #use String::Trim::More qw(trim_blank_lines);
 
 require Exporter;
@@ -702,7 +701,7 @@ sub _gen_func {
         }
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
-        } elsif (reftype($table_data) eq 'CODE') {
+        } elsif (ref($table_data) eq 'CODE') {
             my $res;
             return err(500, "BUG: Table data function died: $@")
                 unless eval { $res = $table_data->($query) };
@@ -1323,7 +1322,7 @@ sub gen_read_table_func {
     my $table_data = $args{table_data}
         or return [400, "Please specify table_data"];
     __is_aoa($table_data) or __is_aoh($table_data) or
-        reftype($table_data) eq 'CODE'
+        ref($table_data) eq 'CODE'
             or return [400, "Invalid table_data: must be AoA/AoH/function"];
     my $table_spec = $args{table_spec}
         or return [400, "Please specify table_spec"];
