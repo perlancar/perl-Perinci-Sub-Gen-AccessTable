@@ -25,8 +25,8 @@ our @EXPORT_OK = qw(gen_read_table_func);
 our %SPEC;
 
 sub __parse_schema {
-    require Data::Sah;
-    Data::Sah::normalize_schema($_[0]);
+    require Data::Sah::Normalize;
+    Data::Sah::Normalize::normalize_schema($_[0]);
 }
 
 sub __is_aoa {
