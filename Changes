@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.45    2015-04-09 (PERLANCAR)
+
+	- Don't give default to schema when default is undef.
+
+
 0.44    2015-02-18 (PERLANCAR)
 
 	- No functional changes.
