@@ -66,7 +66,7 @@ sub _add_arg {
     my $schema = ref($args{type}) eq 'ARRAY' ? $args{type} :
         [$args{type} => {}];
     $schema->[1] //= {};
-    $schema->[1]{default} = $args{default};
+    $schema->[1]{default} = $args{default} if defined($args{default});
     my $arg_spec = {
         schema => $schema,
         tags => [$tag],
