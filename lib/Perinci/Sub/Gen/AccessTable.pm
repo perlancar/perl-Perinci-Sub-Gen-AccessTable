@@ -72,6 +72,10 @@ sub _add_arg {
         tags => [$tag],
     };
 
+    if ($args{aliases}) {
+        $arg_spec->{cmdline_aliases} = $args{aliases};
+    }
+
     # translation args
     my %xargs = (field => $fname);
 
@@ -127,6 +131,7 @@ sub _gen_meta {
         name        => 'with_field_names',
         type        => 'bool',
         default     => $opts->{default_with_field_names},
+        aliases     => $opts->{with_field_names_aliases},
         cat_name    => 'field-selection',
         cat_text    => N__('field selection'),
         summary     => N__('Return field names in each record (as hash/'.
@@ -145,6 +150,7 @@ _
         name        => 'detail',
         type        => 'bool',
         default     => $opts->{default_detail} // 0,
+        aliases     => $opts->{detail_aliases},
         cat_name    => 'field-selection',
         cat_text    => N__('field selection'),
         summary     => N__('Return array of full records instead of '.
@@ -161,6 +167,7 @@ _
         name        => 'fields',
         type        => ['array*' => {of=>'str*'}],
         default     => $opts->{default_fields},
+        aliases     => $opts->{fields_aliases},
         cat_name    => 'field-selection',
         cat_text    => N__('field selection'),
         summary     => N__('Select fields to return'),
@@ -171,6 +178,7 @@ _
         name        => 'sort',
         type        => 'str',
         default     => $opts->{default_sort},
+        aliases     => $opts->{sort_aliases},
         cat_name    => 'ordering',
         cat_text    => N__('ordering'),
         summary     => N__('Order records according to certain field(s)'),
@@ -187,6 +195,7 @@ _
         name        => 'random',
         type        => 'bool',
         default     => $opts->{default_random} // 0,
+        aliases     => $opts->{random_aliases},
         cat_name    => 'ordering',
         cat_text    => N__('ordering'),
         summary     => N__('Return records in random order'),
@@ -197,6 +206,7 @@ _
         name        => 'result_limit',
         type        => 'int',
         default     => $opts->{default_result_limit},
+        aliases     => $opts->{result_limit_aliases},
         cat_name    => 'paging',
         cat_text    => N__('paging'),
         summary     => N__('Only return a certain number of records'),
@@ -205,6 +215,7 @@ _
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'result_start',
+        aliases     => $opts->{result_start_aliases},
         type        => 'int',
         default     => 1,
         cat_name    => 'paging',
@@ -214,7 +225,8 @@ _
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
-        name        => 'q',
+        name        => 'query',
+        aliases     => $opts->{query_aliases},
         type        => 'str',
         cat_name    => 'filtering',
         cat_text    => N__('filtering'),
@@ -1295,6 +1307,32 @@ case, the function will return with this return value.
 
 _
         },
+
+        result_limit_aliases => {
+            schema => 'hash*',
+        },
+        result_start_aliases => {
+            schema => 'hash*',
+        },
+        with_field_names_aliases => {
+            schema => 'hash*',
+        },
+        detail_aliases => {
+            schema => 'hash*',
+        },
+        fields_aliases => {
+            schema => 'hash*',
+        },
+        sort_aliases => {
+            schema => 'hash*',
+        },
+        random_aliases => {
+            schema => 'hash*',
+        },
+        query_aliases => {
+            schema => 'hash*',
+        },
+
     }, # args
     result => {
         summary => 'A hash containing generated function, metadata',
@@ -1356,12 +1394,28 @@ sub gen_read_table_func {
         summary                    => $args{summary},
         description                => $args{description},
         langs                      => $args{langs} // ['en_US'],
+
         default_detail             => $args{default_detail},
+        detail_aliases             => $args{detail_cmdline_aliases} // {l=>{}},
+
         default_with_field_names   => $args{default_with_field_names},
+        with_field_names_aliases   => $args{with_field_names_aliases},
+
         default_fields             => $args{default_fields},
+        fields_aliases             => $args{fields_aliases},
+
         default_sort               => $args{default_sort},
+        sort_aliases               => $args{sort_aliases},
+
         default_random             => $args{default_random},
+        random_aliases             => $args{random_aliases},
+
         default_result_limit       => $args{default_result_limit},
+        result_limit_aliases       => $args{result_limit_aliases},
+
+        result_start_aliases       => $args{result_start_aliases},
+        query_aliases              => $args{query_aliases} // {q=>{}},
+
         enable_filtering           => $args{enable_filtering} // 1,
         enable_search              => $args{enable_search} // 1,
         custom_search              => $args{custom_search},
