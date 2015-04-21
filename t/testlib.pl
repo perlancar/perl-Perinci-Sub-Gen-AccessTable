@@ -77,9 +77,9 @@ sub test_gen {
 
             if ((!defined($fargs{enable_filtering}) || $fargs{enable_filtering}) &&
                     (!defined($fargs{enable_search}) || $fargs{enable_search})) {
-                ok( $args->{q}, "search arg 'q' generated");
+                ok( $args->{query}, "search arg 'query' generated");
             } else {
-                ok(!$args->{q}, "search arg 'q' not generated");
+                ok(!$args->{query}, "search arg 'query' not generated");
             }
         }
 

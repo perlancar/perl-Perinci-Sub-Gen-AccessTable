@@ -1,5 +1,15 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.46    2015-04-21 (PERLANCAR)
+
+        - Add some *_aliases args to gen_read_table_func() to set
+          cmdline_aliases for generated args like detail, with_field_names, etc.
+
+        - [ux] Give default alias -l for --detail.
+
+        - Rename --q to --query but give -q as cmdline alias.
+
+
 0.45    2015-04-09 (PERLANCAR)
 
 	- Don't give default to schema when default is undef.
