@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.47    2015-04-22 (PERLANCAR)
+
+	- [ux] Add 'pos=0' property for query.
+
+	- [Bugfix] Forgot to adjust hash key name for query.
+
+
 0.46    2015-04-21 (PERLANCAR)
 
         - Add some *_aliases args to gen_read_table_func() to set
