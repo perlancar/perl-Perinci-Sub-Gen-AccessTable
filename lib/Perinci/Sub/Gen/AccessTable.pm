@@ -76,6 +76,10 @@ sub _add_arg {
         $arg_spec->{cmdline_aliases} = $args{aliases};
     }
 
+    if (defined $args{pos}) {
+        $arg_spec->{pos} = $args{pos};
+    }
+
     # translation args
     my %xargs = (field => $fname);
 
@@ -231,6 +235,7 @@ _
         cat_name    => 'filtering',
         cat_text    => N__('filtering'),
         summary     => N__("Search"),
+        pos         => 0,
     ) if $opts->{enable_filtering} && $opts->{enable_search};
 
     # add filter arguments for each table field
