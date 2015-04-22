@@ -7,7 +7,8 @@ Revision history for Perinci-Sub-Gen-AccessTable
 
         - [ux] Give default alias -l for --detail.
 
-        - Rename --q to --query but give -q as cmdline alias.
+        - [Incompatible Change] Rename --q to --query but give -q as cmdline
+          alias.
 
 
 0.45    2015-04-09 (PERLANCAR)
