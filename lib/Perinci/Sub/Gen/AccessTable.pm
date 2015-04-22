@@ -602,7 +602,7 @@ sub __parse_query {
     my $ci = $opts->{case_insensitive_search};
     my $search_opts = {ci => $ci};
     my $search_re;
-    my $q = $args->{q};
+    my $q = $args->{query};
     if (defined $q) {
         if ($opts->{word_search}) {
             $search_re = $ci ? qr/\b$q\b/i : qr/\b$q\b/;
@@ -610,7 +610,7 @@ sub __parse_query {
             $search_re = $ci ? qr/$q/i : qr/$q/;
         }
     }
-    $query->{q} = $args->{q};
+    $query->{query} = $args->{query};
     $query->{search_opts} = $args->{search_opts};
     unless ($opts->{custom_search}) {
         $query->{search_fields} = \@searchable_fields;
@@ -744,7 +744,7 @@ sub _gen_func {
         no warnings; # silence undef warnings when comparing record values
 
         $log->tracef("(read_table_func) Filtering ...");
-        my $q = $query->{q};
+        my $q = $query->{query};
         my $search_re = $query->{search_re};
 
         if (grep { $_->[1] eq 'date' } @{ $query->{filters} }) {

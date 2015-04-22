@@ -265,8 +265,8 @@ test_gen(
         my ($res) = @_;
         my $func = $res->[2]{code};
 
-        test_query($func, {q=>"b"}, 1, 'search b');
-        test_query($func, {q=>"B"}, 1, 'search B');
+        test_query($func, {query=>"b"}, 1, 'search b');
+        test_query($func, {query=>"B"}, 1, 'search B');
     },
 );
 
@@ -289,8 +289,8 @@ test_gen(
         my ($res) = @_;
         my $func = $res->[2]{code};
 
-        test_query($func, {q=>'Apple'}, 2, 'search Apple');
-        test_query($func, {q=>'pineapple'}, 1, 'search pineapple');
+        test_query($func, {query=>'Apple'}, 2, 'search Apple');
+        test_query($func, {query=>'pineapple'}, 1, 'search pineapple');
     },
 );
 
@@ -314,8 +314,8 @@ test_gen(
         my ($res) = @_;
         my $func = $res->[2]{code};
 
-        test_query($func, {q=>'a'}, 0, "doesn't search non-searchable field");
-        test_query($func, {q=>'e'}, 1, "search searchable field");
+        test_query($func, {query=>'a'}, 0, "doesn't search non-searchable field");
+        test_query($func, {query=>'e'}, 1, "search searchable field");
     },
 );
 
@@ -329,8 +329,8 @@ test_gen(
         my ($res) = @_;
         my $func = $res->[2]{code};
 
-        test_query($func, {q=>"b"}, 1, 'search b');
-        test_query($func, {q=>"B"}, 0, 'search B');
+        test_query($func, {query=>"b"}, 1, 'search b');
+        test_query($func, {query=>"B"}, 0, 'search B');
     },
 );
 
@@ -344,8 +344,8 @@ test_gen(
         my ($res) = @_;
         my $func = $res->[2]{code};
 
-        test_query($func, {q=>"b"}, 0, 'word search b (1)');
-        test_query($func, {q=>"aa"}, 2, 'word search aa (2)');
+        test_query($func, {query=>"b"}, 0, 'word search b (1)');
+        test_query($func, {query=>"aa"}, 2, 'word search aa (2)');
     },
 );
 
@@ -362,7 +362,7 @@ test_gen(
         my ($res) = @_;
         my $func = $res->[2]{code};
 
-        test_query($func, {q=>"whatever"}, 2, 'search whatever');
+        test_query($func, {query=>"whatever"}, 2, 'search whatever');
     },
 );
 
