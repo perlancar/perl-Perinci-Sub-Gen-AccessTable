@@ -1,5 +1,11 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.48    2015-04-28 (PERLANCAR)
+
+	- [ux] Use singular form of --fields (--field) when user specifies
+	  a string.
+
+
 0.47    2015-04-22 (PERLANCAR)
 
 	- [ux] Add 'pos=0' property for query.
