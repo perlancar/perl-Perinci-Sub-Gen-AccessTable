@@ -80,6 +80,12 @@ sub _add_arg {
         $arg_spec->{pos} = $args{pos};
     }
 
+    if ($args{extra_props}) {
+        for (keys %{ $args{extra_props} }) {
+            $arg_spec->{$_} = $args{extra_props}{$_};
+        }
+    }
+
     # translation args
     my %xargs = (field => $fname);
 
@@ -175,6 +181,9 @@ _
         cat_name    => 'field-selection',
         cat_text    => N__('field selection'),
         summary     => N__('Select fields to return'),
+        extra_props => {
+            'x.name.is_plural' => 1,
+        },
     ) if $opts->{enable_field_selection};
     _add_arg(
         func_meta   => $func_meta,
