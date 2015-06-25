@@ -762,10 +762,12 @@ sub _gen_func {
         my $search_re = $query->{search_re};
 
         if (grep { $_->[1] eq 'date' } @{ $query->{filters} }) {
-            require DateTime;
             require Data::Sah::Util::Type::Date;
             Data::Sah::Util::Type::Date->import('coerce_date');
         }
+
+        local $Data::Sah::Util::Type::Date::DATE_MODULE = 'Time::Moment'
+            if %Data::Sah::Util::Type::Date::;
 
       REC:
         for my $r0 (@$data) {
@@ -811,7 +813,7 @@ sub _gen_func {
                     my $dopn = coerce_date($opn);
                     my $d = coerce_date($r_h->{$f});
                     next REC unless $dopn && $d;
-                    next REC unless DateTime->compare($d, $dopn) == 0;
+                    next REC unless $d->compare($dopn) == 0;
                 } elsif ($op eq '==') {
                     next REC unless $r_h->{$f} == $opn;
 
@@ -821,7 +823,7 @@ sub _gen_func {
                     my $dopn = coerce_date($opn);
                     my $d = coerce_date($r_h->{$f});
                     next REC unless $dopn && $d;
-                    next REC unless DateTime->compare($d, $dopn) != 0;
+                    next REC unless $d->compare($dopn) != 0;
                 } elsif ($op eq '!=') {
                     next REC unless $r_h->{$f} != $opn;
 
@@ -831,7 +833,7 @@ sub _gen_func {
                     my $dopn = coerce_date($opn);
                     my $d = coerce_date($r_h->{$f});
                     next REC unless $dopn && $d;
-                    next REC unless DateTime->compare($d, $dopn) >= 0;
+                    next REC unless $d->compare($dopn) >= 0;
                 } elsif ($op eq '>=') {
                     next REC unless $r_h->{$f} >= $opn;
 
@@ -841,7 +843,7 @@ sub _gen_func {
                     my $dopn = coerce_date($opn);
                     my $d = coerce_date($r_h->{$f});
                     next REC unless $dopn && $d;
-                    next REC unless DateTime->compare($d, $dopn) >  0;
+                    next REC unless $d->compare($dopn) >  0;
                 } elsif ($op eq '>' ) {
                     next REC unless $r_h->{$f} >  $opn;
 
@@ -851,7 +853,7 @@ sub _gen_func {
                     my $dopn = coerce_date($opn);
                     my $d = coerce_date($r_h->{$f});
                     next REC unless $dopn && $d;
-                    next REC unless DateTime->compare($d, $dopn) <= 0;
+                    next REC unless $d->compare($dopn) <= 0;
                 } elsif ($op eq '<=') {
                     next REC unless $r_h->{$f} <= $opn;
 
@@ -861,7 +863,7 @@ sub _gen_func {
                     my $dopn = coerce_date($opn);
                     my $d = coerce_date($r_h->{$f});
                     next REC unless $dopn && $d;
-                    next REC unless DateTime->compare($d, $dopn) <  0;
+                    next REC unless $d->compare($dopn) <  0;
                 } elsif ($op eq '<' ) {
                     next REC unless $r_h->{$f} <  $opn;
 
