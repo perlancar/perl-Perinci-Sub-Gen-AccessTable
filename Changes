@@ -1,5 +1,10 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.51    2015-07-01 (PERLANCAR)
+
+	- Tweak schema for --field (add in clause) so completion works.
+
+
 0.50    2015-07-01 (PERLANCAR)
 
         - No functional changes.
