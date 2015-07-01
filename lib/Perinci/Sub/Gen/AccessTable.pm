@@ -175,7 +175,7 @@ _
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'fields',
-        type        => ['array*' => {of=>'str*'}],
+        type        => ['array*' => {of=>['str*', in=>[keys %{$table_spec->{fields}}]]}],
         default     => $opts->{default_fields},
         aliases     => $opts->{fields_aliases},
         cat_name    => 'field-selection',
