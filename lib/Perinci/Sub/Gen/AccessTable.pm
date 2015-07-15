@@ -131,6 +131,7 @@ sub _gen_meta {
                 spec => $table_spec,
             },
         },
+        'x.dynamic_generator_modules' => [__PACKAGE__],
     };
 
     my $func_args = $func_meta->{args};
