@@ -1,5 +1,12 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.53    2015-08-18 (PERLANCAR)
+
+	- No functional changes.
+
+	- Switch from Log::Any to Log::Any::IfLOG.
+
+
 0.52    2015-07-15 (PERLANCAR)
 
 	- Add x.dynamic_generator_modules to generated function metadata.
