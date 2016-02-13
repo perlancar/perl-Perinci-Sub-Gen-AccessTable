@@ -1,5 +1,14 @@
 Revision history for Perinci-Sub-Gen-AccessTable
 
+0.55    2016-02-13 (PERLANCAR)
+
+        [Incompatible changes]
+
+        - Make the generated 'sort' argument as array of str instead of str, so
+          we can add an 'in' schema clause to each str and helps tab completion
+          complete each sort field.
+
+
 0.54    2015-09-04 (PERLANCAR)
 
 	- No functional changes.
