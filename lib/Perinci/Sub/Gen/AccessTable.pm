@@ -192,9 +192,9 @@ _
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'sort',
-        type        => ['array*', of=>['str*', in=>[
+        type        => ['array*', {of=>['str*', {in=>[
             map {($_, "-$_")} grep {$fields->{$_}{sortable}} sort keys %$fields,
-        ]]],
+        ]}]}],
         default     => $opts->{default_sort},
         aliases     => $opts->{sort_aliases},
         cat_name    => 'ordering',

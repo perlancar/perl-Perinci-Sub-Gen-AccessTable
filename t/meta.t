@@ -157,7 +157,7 @@ test_gen(
     name => 'default_sort',
     table_data => $table_data,
     table_spec => $table_spec,
-    other_args => {default_sort=>"s"},
+    other_args => {default_sort=>["s"]},
     post_test => sub {
         my ($res) = @_;
         my $func = $res->[2]{code};
