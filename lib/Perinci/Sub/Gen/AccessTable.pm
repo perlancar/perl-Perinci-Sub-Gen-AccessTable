@@ -119,6 +119,8 @@ sub _gen_meta {
     my ($table_spec, $opts) = @_;
     my $langs = $opts->{langs};
 
+    my $fields = $table_spec->{fields};
+
     # add general arguments
 
     my $func_meta = {
@@ -190,7 +192,9 @@ _
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'sort',
-        type        => 'str',
+        type        => ['array*', of=>['str*', in=>[
+            map {($_, "-$_")} grep {$fields->{$_}{sortable}} sort keys %$fields,
+        ]]],
         default     => $opts->{default_sort},
         aliases     => $opts->{sort_aliases},
         cat_name    => 'ordering',
@@ -641,8 +645,7 @@ sub __parse_query {
     my @sort_fields;
     my @sorts;
     if (defined $args->{sort}) {
-        my @f = split /\s*[,;]\s*/, $args->{sort};
-        for my $f (@f) {
+        for my $f (@{ $args->{sort} }) {
             my $desc = $f =~ s/^-//;
             return err(400, "Unknown field in sort: $f")
                 unless $f ~~ @fields;
@@ -1035,11 +1038,11 @@ arguments.
   The random argument is an ordering option. If set to true, order of records
   returned will be shuffled first. This happened before paging.
 
-* *sort* => STR
+* *sort* => array of str
 
-  The sort argument is an ordering option, containing name of field. A - prefix
-  signifies descending instead of ascending order. Multiple fields are allowed,
-  separated by comma.
+  The sort argument is an ordering option, containing names of field. A `-`
+  prefix before the field name signifies descending instead of ascending order.
+  Multiple fields are allowed for secondary sort fields.
 
 * *q* => STR
 
@@ -1169,7 +1172,7 @@ _
                 "value in generated function's metadata",
         },
         default_sort => {
-            schema => 'str',
+            schema => ['array*', of=>'str*'],
             summary => "Supply default 'sort' ".
                 "value in generated function's metadata",
         },
