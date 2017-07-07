@@ -460,6 +460,8 @@ _
     my $ea = $opts->{extra_args} // {};
     $func_args->{$_} = $ea->{$_} for keys %$ea;
 
+    use DDC; dd $func_meta;
+
     [200, "OK", $func_meta];
 }
 
