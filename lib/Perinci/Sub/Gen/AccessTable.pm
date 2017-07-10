@@ -7,7 +7,7 @@ use 5.010001;
 use strict;
 use warnings;
 use experimental 'smartmatch';
-use Log::Any::IfLOG '$log';
+use Log::ger;
 
 use Function::Fallback::CoreOrPP qw(clone);
 use List::Util qw(shuffle);
@@ -673,7 +673,7 @@ sub __parse_query {
     $query->{result_limit} = $args->{result_limit};
     $query->{result_start} = $args->{result_start} // 1;
 
-    $log->tracef("parsed query: %s", $query);
+    log_trace("parsed query: %s", $query);
     [200, "OK", $query];
 }
 
@@ -763,7 +763,7 @@ sub _gen_func {
 
         no warnings; # silence undef warnings when comparing record values
 
-        $log->tracef("(read_table_func) Filtering ...");
+        log_trace("(read_table_func) Filtering ...");
         my $q = $query->{query};
         my $search_re = $query->{search_re};
 
@@ -916,7 +916,7 @@ sub _gen_func {
             push @r, $r_h;
         }
 
-        $log->tracef("(read_table_func) Ordering ...");
+        log_trace("(read_table_func) Ordering ...");
         if ($metadata->{sorted}) {
             # do nothing
         } elsif ($query->{random}) {
@@ -943,7 +943,7 @@ sub _gen_func {
         use experimental 'smartmatch';
 
         # perform paging
-        $log->tracef("(read_table_func) Paging ...");
+        log_trace("(read_table_func) Paging ...");
         unless ($metadata->{paged}) {
             if ($query->{result_start} > 1) {
                 splice @r, 0, $query->{result_start}-1;
@@ -954,7 +954,7 @@ sub _gen_func {
         }
 
         # select fields
-        $log->tracef("(read_table_func) Selecting fields ...");
+        log_trace("(read_table_func) Selecting fields ...");
         my $pk = $table_spec->{pk};
         goto SKIP_SELECT_FIELDS if $metadata->{fields_selected};
       REC2:
@@ -1466,7 +1466,7 @@ sub gen_read_table_func {
     if ($args{install} // 1) {
         no strict 'refs';
         no warnings;
-        $log->tracef("Installing function as %s ...", $fqname);
+        log_trace("Installing function as %s ...", $fqname);
         *{ $fqname } = $func;
         ${$package . "::SPEC"}{$uqname} = $func_meta;
     }
