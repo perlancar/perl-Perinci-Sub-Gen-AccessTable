@@ -1604,6 +1604,8 @@ arguments.
 
 =head1 SEE ALSO
 
+L<Perinci::Sub::Gen::AccessTable::Simple> for a simpler variant.
+
 L<Rinci>
 
 L<Perinci::CmdLine>
