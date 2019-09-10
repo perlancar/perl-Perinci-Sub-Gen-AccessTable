@@ -460,6 +460,10 @@ _
     my $ea = $opts->{extra_args} // {};
     $func_args->{$_} = $ea->{$_} for keys %$ea;
 
+    # extra metadata properties
+    my $extra_props = $opts->{extra_props} // {};
+    $func_meta->{$_} = $extra_props->{$_} for keys %$extra_props;
+
     [200, "OK", $func_meta];
 }
 
@@ -1287,6 +1291,10 @@ _
             schema => ['hash*'],
             summary => 'Extra arguments for the generated function',
         },
+        extra_props => {
+            schema => ['hash*'],
+            summary => 'Extra metadata properties for the generated function metadata',
+        },
         custom_filters => {
             schema => [hash => {of=>['hash*' => {keys=>{
                 'code'=>'code*', 'meta'=>'hash*'}}]}],
@@ -1449,6 +1457,7 @@ sub gen_read_table_func {
         (map { ("default_$_" => $dav->{$_}) } keys %$dav),
         custom_filters             => $cff,
         extra_args                 => $args{extra_args},
+        extra_props                => $args{extra_props},
         hooks                      => $args{hooks} // {},
     };
 
