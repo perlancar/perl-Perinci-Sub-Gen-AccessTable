@@ -523,7 +523,6 @@ sub __parse_query {
             @requested_fields = ($table_spec->{pk});
             $args->{with_field_names} //= 0;
         }
-        use DD; dd \@requested_fields;
     } # SELECT_FIELDS
 
     for (@requested_fields) {
