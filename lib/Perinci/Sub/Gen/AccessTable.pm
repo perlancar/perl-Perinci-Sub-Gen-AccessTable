@@ -191,6 +191,21 @@ _
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
+        name        => 'exclude_fields',
+        type        => ['array*' => {of=>['str*', in=>[keys %{$table_spec->{fields}}]]}],
+        default     => $opts->{default_exclude_fields},
+        aliases     => $opts->{exclude_fields_aliases},
+        cat_name    => 'field-selection',
+        cat_text    => N__('field selection'),
+        summary     => N__('Select fields to return'),
+        extra_props => {
+            'x.name.is_plural' => 1,
+            'x.name.singular' => 'exclude_field',
+        },
+    ) if $opts->{enable_field_selection};
+    _add_arg(
+        func_meta   => $func_meta,
+        langs       => $langs,
         name        => 'sort',
         type        => ['array*', {of=>['str*', {in=>[
             map {($_, "-$_")} grep {$fields->{$_}{sortable}} sort keys %$fields,
@@ -478,19 +493,39 @@ sub __parse_query {
         keys %$fspecs;
 
     my @requested_fields;
-    if ($args->{detail}) {
-        @requested_fields = grep {
-            ($fspecs->{$_}{include_by_default} // 1) ||
-                $args->{"with.$_"}
-            } @fields;
-        $args->{with_field_names} //= 1;
-    } elsif ($args->{fields}) {
-        @requested_fields = @{ $args->{fields} };
-        $args->{with_field_names} //= 0;
-    } else {
-        @requested_fields = ($table_spec->{pk});
-        $args->{with_field_names} //= 0;
-    }
+  SELECT_FIELDS:
+    {
+        if ($args->{detail} || $args->{exclude_fields}) {
+            @requested_fields = grep {
+                ($fspecs->{$_}{include_by_default} // 1) ||
+                    $args->{"with.$_"}
+                } @fields;
+            $args->{with_field_names} //= 1
+                if $args->{detail};
+        }
+
+        if ($args->{fields}) {
+            @requested_fields = @{ $args->{fields} };
+            $args->{with_field_names} //= 0;
+        }
+
+        if ($args->{exclude_fields}) {
+            my @filtered_fields;
+            for my $field (@requested_fields) {
+                next if grep { $field eq $_ } @{ $args->{exclude_fields} };
+                push @filtered_fields, $field;
+            }
+            @requested_fields = @filtered_fields;
+            $args->{with_field_names} //= 0;
+        }
+
+        unless (@requested_fields) {
+            @requested_fields = ($table_spec->{pk});
+            $args->{with_field_names} //= 0;
+        }
+        use DD; dd \@requested_fields;
+    } # SELECT_FIELDS
+
     for (@requested_fields) {
         return err(400, "Unknown field $_") unless $_ ~~ @fields;
     }
@@ -697,7 +732,7 @@ sub _gen_func {
                 $args{$ak} //= $av->{schema}[1]{default};
             }
             # array-ize "string,with,comma"
-            if ($ak eq 'fields' && defined($args{$ak})) {
+            if ($ak =~ /\A(exclude_fields|fields)\z/ && defined($args{$ak})) {
                 $args{$ak} = [split /\s*[,;]\s*/, $args{$ak}]
                     unless ref($args{$ak}) eq 'ARRAY';
             }
@@ -961,7 +996,7 @@ sub _gen_func {
         goto SKIP_SELECT_FIELDS if $metadata->{fields_selected};
       REC2:
         for my $r (@r) {
-            if (!$args{detail} && !$args{fields}) {
+            if (!$args{detail} && !$args{fields} && !$args{exclude_fields}) {
                 $r = $r->{$pk};
                 next REC2;
             }
@@ -1170,6 +1205,10 @@ _
             schema => 'str',
             summary => "Supply default 'fields' value for function arg spec",
         },
+        default_exclude_fields => {
+            schema => 'str',
+            summary => "Supply default 'exclude_fields' value for function arg spec",
+        },
         default_with_field_names => {
             schema => 'bool',
             summary => "Supply default 'with_field_names' ".
@@ -1349,6 +1388,9 @@ _
             schema => 'hash*',
         },
         fields_aliases => {
+            schema => 'hash*',
+        },
+        exclude_fields_aliases => {
             schema => 'hash*',
         },
         sort_aliases => {
