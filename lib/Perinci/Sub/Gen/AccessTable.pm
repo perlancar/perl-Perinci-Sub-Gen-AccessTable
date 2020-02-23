@@ -500,26 +500,19 @@ sub __parse_query {
                 ($fspecs->{$_}{include_by_default} // 1) ||
                     $args->{"with.$_"}
                 } @fields;
-            $args->{with_field_names} //= 1
-                if $args->{detail};
-        }
-
-        if ($args->{fields}) {
+            if ($args->{exclude_fields}) {
+                my @filtered_fields;
+                for my $field (@requested_fields) {
+                    next if grep { $field eq $_ } @{ $args->{exclude_fields} };
+                    push @filtered_fields, $field;
+                }
+                @requested_fields = @filtered_fields;
+            }
+            $args->{with_field_names} //= $args->{detail} ? 1:0;
+        } elsif ($args->{fields}) {
             @requested_fields = @{ $args->{fields} };
             $args->{with_field_names} //= 0;
-        }
-
-        if ($args->{exclude_fields}) {
-            my @filtered_fields;
-            for my $field (@requested_fields) {
-                next if grep { $field eq $_ } @{ $args->{exclude_fields} };
-                push @filtered_fields, $field;
-            }
-            @requested_fields = @filtered_fields;
-            $args->{with_field_names} //= 0;
-        }
-
-        unless (@requested_fields) {
+        } else {
             @requested_fields = ($table_spec->{pk});
             $args->{with_field_names} //= 0;
         }
