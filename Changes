@@ -1,3 +1,9 @@
+0.584   2020-10-04  Released-By: PERLANCAR; Urgency: medium
+
+	- Use Data::Sah::Resolve. This allows us to produce, e.g. --foo-min &
+          --foo-max options for 'uint' fields instead of just 'int' fields.
+
+
 0.583   2020-02-23  Released-By: PERLANCAR; Urgency: medium
 
 	- [bugfix] Fix previous commit.
