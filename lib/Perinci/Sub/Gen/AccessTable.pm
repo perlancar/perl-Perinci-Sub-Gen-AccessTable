@@ -116,6 +116,8 @@ sub _add_arg {
 }
 
 sub _gen_meta {
+    require Data::Sah::Resolve;
+
     my ($table_spec, $opts) = @_;
     my $langs = $opts->{langs};
 
@@ -272,7 +274,8 @@ _
     for my $fname (keys %{$table_spec->{fields}}) {
         my $fspec   = $table_spec->{fields}{$fname};
         my $fschema = $fspec->{schema};
-        my $ftype   = $fschema->[0];
+        my $frschema = Data::Sah::Resolve::resolve_schema($fschema);
+        my $ftype   = $frschema->[0];
 
         next unless $opts->{enable_filtering};
         next if defined($fspec->{filterable}) && !$fspec->{filterable};
