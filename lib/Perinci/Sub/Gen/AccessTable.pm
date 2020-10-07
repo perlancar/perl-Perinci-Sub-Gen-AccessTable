@@ -568,7 +568,7 @@ sub __parse_query {
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
-    for my $f (grep {$frschemas{$_}[0] ~~ ['array','bool']} @fields) {
+    for my $f (grep {!($frschemas{$_}[0] ~~ ['array','bool'])} @fields) {
         my $fspec = $fspecs->{$f};
         my $ftype = $frschemas{$f}[0];
         my $exists;
