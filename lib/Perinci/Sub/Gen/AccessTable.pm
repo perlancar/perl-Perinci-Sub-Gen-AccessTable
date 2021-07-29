@@ -275,7 +275,7 @@ _
         my $fspec   = $table_spec->{fields}{$fname};
         my $fschema = $fspec->{schema};
         my $frschema = Data::Sah::Resolve::resolve_schema($fschema);
-        my $ftype   = $frschema->[0];
+        my $ftype   = $frschema->{type};
 
         next unless $opts->{enable_filtering};
         next if defined($fspec->{filterable}) && !$fspec->{filterable};
@@ -538,9 +538,9 @@ sub __parse_query {
 
     my $cic = $opts->{case_insensitive_comparison};
 
-    for my $f (grep {$frschemas{$_}[0] eq 'bool'} @fields) {
+    for my $f (grep {$frschemas{$_}{type} eq 'bool'} @fields) {
         my $fspec = $fspecs->{$f};
-        my $ftype = $frschemas{$f}[0];
+        my $ftype = $frschemas{$f}{type};
         my $exists;
         if (defined $args->{"$f.is"}) {
             $exists++;
@@ -555,9 +555,9 @@ sub __parse_query {
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
-    for my $f (grep {$frschemas{$_}[0] eq 'array'} @fields) {
+    for my $f (grep {$frschemas{$_}{type} eq 'array'} @fields) {
         my $fspec = $fspecs->{$f};
-        my $ftype = $frschemas{$f}[0];
+        my $ftype = $frschemas{$f}{type};
         my $exists;
         if (defined $args->{"$f.has"}) {
             $exists++;
@@ -570,9 +570,9 @@ sub __parse_query {
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
-    for my $f (grep {!($frschemas{$_}[0] ~~ ['array','bool'])} @fields) {
+    for my $f (grep {!($frschemas{$_}{type} ~~ ['array','bool'])} @fields) {
         my $fspec = $fspecs->{$f};
-        my $ftype = $frschemas{$f}[0];
+        my $ftype = $frschemas{$f}{type};
         my $exists;
         if (defined $args->{"$f.in"}) {
             $exists++;
@@ -584,10 +584,10 @@ sub __parse_query {
         }
     }
 
-    for my $f (grep {$frschemas{$_}[0] =~ /^(int|float|str|date)$/}
+    for my $f (grep {$frschemas{$_}{type} =~ /^(int|float|str|date)$/}
                    @fields) { # XXX all Comparable
         my $fspec = $fspecs->{$f};
-        my $ftype = $frschemas{$f}[0];
+        my $ftype = $frschemas{$f}{type};
         my $exists;
         if (defined $args->{"$f.is"}) {
             $exists++;
@@ -624,9 +624,9 @@ sub __parse_query {
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
     }
 
-    for my $f (grep {$frschemas{$_}[0] =~ /^str$/} @fields) {
+    for my $f (grep {$frschemas{$_}{type} =~ /^str$/} @fields) {
         my $fspec = $fspecs->{$f};
-        my $ftype = $frschemas{$f}[0];
+        my $ftype = $frschemas{$f}{type};
         my $exists;
         if (defined $args->{"$f.contains"}) {
             $exists++;
@@ -677,10 +677,10 @@ sub __parse_query {
     unless ($opts->{custom_search}) {
         $query->{search_fields} = \@searchable_fields;
         $query->{search_str_fields} = [grep {
-            $frschemas{$_}[0] =~ /^(str)$/
+            $frschemas{$_}{type} =~ /^(str)$/
         } @searchable_fields];
         $query->{search_array_fields} = [grep {
-            $frschemas{$_}[0] =~ /^(array)$/
+            $frschemas{$_}{type} =~ /^(array)$/
         } @searchable_fields];
         $query->{search_re} = $search_re;
     }
@@ -693,7 +693,7 @@ sub __parse_query {
             return err(400, "Unknown field in sort: $f")
                 unless $f ~~ @fields;
             my $fspec = $fspecs->{$f};
-            my $ftype = $frschemas{$f}[0];
+            my $ftype = $frschemas{$f}{type};
             return err(400, "Field $f is not sortable")
                 unless !defined($fspec->{sortable}) || $fspec->{sortable};
             my $op = $ftype =~ /^(int|float)$/ ? '<=>' : 'cmp';
