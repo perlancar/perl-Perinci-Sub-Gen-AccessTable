@@ -1,14 +1,12 @@
 package Perinci::Sub::Gen::AccessTable;
 
-# DATE
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
 use experimental 'smartmatch';
 use Log::ger;
 
+use Exporter 'import';
 use Function::Fallback::CoreOrPP qw(clone);
 use List::Util qw(shuffle);
 use Locale::Set qw(:locale_h setlocale);
@@ -18,8 +16,11 @@ use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
 #use String::Trim::More qw(trim_blank_lines);
 
-require Exporter;
-our @ISA       = qw(Exporter);
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
+
 our @EXPORT_OK = qw(gen_read_table_func);
 
 our %SPEC;
