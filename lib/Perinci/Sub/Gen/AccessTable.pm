@@ -277,7 +277,16 @@ _
             'x.name.is_plural' => 1,
             'x.name.singular' => 'query',
         },
-    ) if $opts->{enable_filtering} && $opts->{enable_search};
+        description => N__(<<'_',
+
+This will search all searchable fields with one or more specified queries. Each
+query can be in the form of `-FOO` (dash prefix notation) to require that the
+fields do not contain specified string, or `/FOO/` to use regular expression.
+All queries must match if the `query_boolean` option is set to `and`; only one
+query should match if the `query_boolean` option is set to `or`.
+
+_
+    )    ) if $opts->{enable_filtering} && $opts->{enable_search};
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
@@ -288,6 +297,13 @@ _
         cat_name    => 'filtering',
         cat_text    => N__('filtering'),
         summary     => N__("Whether records must match all search queries ('and') or just one ('or')"),
+        description => N__(<<'_',
+
+If set to `and`, all queries must match; if set to `or`, only one query should
+match. See the `queries` option for more details on searching.
+
+_
+    )    ) if $opts->{enable_filtering} && $opts->{enable_search};
     ) if $opts->{enable_filtering} && $opts->{enable_search};
 
     # add filter arguments for each table field
