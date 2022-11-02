@@ -286,7 +286,8 @@ All queries must match if the `query_boolean` option is set to `and`; only one
 query should match if the `query_boolean` option is set to `or`.
 
 _
-    )    ) if $opts->{enable_filtering} && $opts->{enable_search};
+                       )
+    ) if $opts->{enable_filtering} && $opts->{enable_search};
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
@@ -303,7 +304,7 @@ If set to `and`, all queries must match; if set to `or`, only one query should
 match. See the `queries` option for more details on searching.
 
 _
-    )    ) if $opts->{enable_filtering} && $opts->{enable_search};
+                       )
     ) if $opts->{enable_filtering} && $opts->{enable_search};
 
     # add filter arguments for each table field
