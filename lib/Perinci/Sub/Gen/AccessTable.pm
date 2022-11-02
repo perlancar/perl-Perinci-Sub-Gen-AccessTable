@@ -710,6 +710,7 @@ sub __parse_query {
                 word => $opts->{word_search},
                 bool => $args->{query_boolean} // $opts->{default_query_boolean} // 'and',
                 ci   => $opts->{case_insensitive_search},
+                re   => 1,
             },
             @qq);
     }
