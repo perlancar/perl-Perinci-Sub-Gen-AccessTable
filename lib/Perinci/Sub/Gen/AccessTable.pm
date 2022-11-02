@@ -81,6 +81,10 @@ sub _add_arg {
         $arg_spec->{pos} = $args{pos};
     }
 
+    if (defined $args{slurpy}) {
+        $arg_spec->{slurpy} = $args{slurpy};
+    }
+
     if ($args{extra_props}) {
         for (keys %{ $args{extra_props} }) {
             $arg_spec->{$_} = $args{extra_props}{$_};
@@ -261,13 +265,14 @@ _
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
-        name        => 'query',
-        aliases     => $opts->{query_aliases},
-        type        => 'str',
+        name        => 'queries',
+        aliases     => $opts->{queries_aliases},
+        type        => ['array*', of=>'str*'],
         cat_name    => 'filtering',
         cat_text    => N__('filtering'),
         summary     => N__("Search"),
         pos         => 0,
+        slurpy      => 1,
     ) if $opts->{enable_filtering} && $opts->{enable_search};
 
     # add filter arguments for each table field
@@ -659,21 +664,25 @@ sub __parse_query {
         }
     }
 
+    my $search_re;
+    my $search_opts = {ci => $opts->{case_insensitive_search}};
     my @searchable_fields = grep {
         !defined($fspecs->{$_}{searchable}) || $fspecs->{$_}{searchable}
         } @fields;
-    my $cis = $opts->{case_insensitive_search};
-    my $search_opts = {ci => $cis};
-    my $search_re;
-    my $q = $args->{query};
-    if (defined $q) {
-        if ($opts->{word_search}) {
-            $search_re = $cis ? qr/\b$q\b/i : qr/\b$q\b/;
-        } else {
-            $search_re = $cis ? qr/$q/i : qr/$q/;
-        }
+    my $q  = $args->{query}; # old, still supported
+    my $qq = $args->{queries};
+    my @qq = defined $qq && @$qq ? @$qq : defined $q ? ($q) : ();
+    if (@qq) {
+        require String::Query::To::Regexp;
+        $search_re = String::Query::To::Regexp::query2re(
+            {
+                word => $opts->{word_search},
+                bool => $args->{query_boolean} // $opts->{default_query_boolean} // 'and',
+                ci   => $opts->{case_insensitive_search},
+            },
+            @qq);
     }
-    $query->{query} = $args->{query};
+    $query->{queries} = @qq ? \@qq : undef;
     $query->{search_opts} = $args->{search_opts};
     unless ($opts->{custom_search}) {
         $query->{search_fields} = \@searchable_fields;
@@ -806,7 +815,7 @@ sub _gen_func {
         no warnings; # silence undef warnings when comparing record values
 
         log_trace("(read_table_func) Filtering ...");
-        my $q = $query->{query};
+        my $qq = $query->{queries};
         my $search_re = $query->{search_re};
 
         if (grep { $_->[1] eq 'date' } @{ $query->{filters} }) {
@@ -977,10 +986,10 @@ sub _gen_func {
                 }
             }
 
-            if (defined $q) {
+            if (defined $qq) {
                 if ($opts->{custom_search}) {
                     next REC unless $opts->{custom_search}->(
-                        $r_h, $q, $query->{search_opts});
+                        $r_h, $qq, $query->{search_opts});
                 } else {
                     my $match;
                     for my $f (@{$query->{search_str_fields}}) {
@@ -1135,12 +1144,19 @@ arguments.
   prefix before the field name signifies descending instead of ascending order.
   Multiple fields are allowed for secondary sort fields.
 
-* *q* => STR
+* *q* => ARRAY[STR]
 
   A filtering option. By default, all fields except those specified with
   searchable=0 will be searched using simple case-insensitive string search.
   There are a few options to customize this, using these gen arguments:
-  *word_search*, *case_insensitive_search*, and *custom_search*.
+  *word_search*, *case_insensitive_search*, *custom_search*,
+  *default_query_boolean*.
+
+* *query_boolean* => STR
+
+  Either `and` or `or`. Default can be set with gen argument
+  *default_query_boolean*. With `and`, all the words in *q* argument must match.
+  With `or`, only one of the words in *q* argument must match.
 
 * Filter arguments
 
@@ -1327,6 +1343,11 @@ Can be used to supply default filters, e.g.
 
 _
         },
+        default_query_boolean => {
+            schema => ['str', in=>['and', 'or']],
+            default => 'and',
+            summary => "Specify default for --query-boolean option",
+        },
         case_insensitive_search => {
             schema => ['bool' => {
                 default => 1,
@@ -1458,7 +1479,7 @@ _
         random_aliases => {
             schema => 'hash*',
         },
-        query_aliases => {
+        queries_aliases => {
             schema => 'hash*',
         },
 
@@ -1543,7 +1564,11 @@ sub gen_read_table_func {
         result_limit_aliases       => $args{result_limit_aliases},
 
         result_start_aliases       => $args{result_start_aliases},
-        query_aliases              => $args{query_aliases} // {q=>{}},
+
+        query_aliases              => $args{query_aliases} // {q=>{}}, # old, still supported
+        queries_aliases            => $args{queries_aliases} // {q=>{}},
+
+        default_query_boolean      => $args{default_query_boolean} // 'and',
 
         enable_filtering           => $args{enable_filtering} // 1,
         enable_search              => $args{enable_search} // 1,
