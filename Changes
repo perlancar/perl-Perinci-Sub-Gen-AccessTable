@@ -1,3 +1,10 @@
+0.588   2022-11-02  Released-By: PERLANCAR; Urgency: medium; Backward-Incompatible: yes
+
+        - [incompatible change] Change generated 'query' (str) argument to
+          'queries' (array of str) argument to allow for multiple queries
+          as well as negative searching.
+
+
 0.587   2021-07-29  Released-By: PERLANCAR; Urgency: medium
 
 	- Update to Data::Sah::Resolve 0.010.

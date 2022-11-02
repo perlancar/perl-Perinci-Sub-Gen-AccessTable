@@ -1598,7 +1598,7 @@ sub gen_read_table_func {
     my $func = $res->[2];
 
     if ($args{install} // 1) {
-        no strict 'refs';
+        no strict 'refs'; ## no critic: TestingAndDebugging::ProhibitNoStrict
         no warnings;
         log_trace("Installing function as %s ...", $fqname);
         *{ $fqname } = $func;
