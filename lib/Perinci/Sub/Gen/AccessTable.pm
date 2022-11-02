@@ -185,7 +185,7 @@ _
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'fields',
-        type        => ['array*' => {of=>['str*', in=>[keys %{$table_spec->{fields}}]]}],
+        type        => ['array*' => {of=>['str*', {in=>[keys %{$table_spec->{fields}}]}]}],
         default     => $opts->{default_fields},
         aliases     => $opts->{fields_aliases},
         cat_name    => 'field-selection',
@@ -199,7 +199,7 @@ _
         func_meta   => $func_meta,
         langs       => $langs,
         name        => 'exclude_fields',
-        type        => ['array*' => {of=>['str*', in=>[keys %{$table_spec->{fields}}]]}],
+        type        => ['array*' => {of=>['str*', {in=>[keys %{$table_spec->{fields}}]}]}],
         default     => $opts->{default_exclude_fields},
         aliases     => $opts->{exclude_fields_aliases},
         cat_name    => 'field-selection',
@@ -273,6 +273,21 @@ _
         summary     => N__("Search"),
         pos         => 0,
         slurpy      => 1,
+        extra_props => {
+            'x.name.is_plural' => 1,
+            'x.name.singular' => 'query',
+        },
+    ) if $opts->{enable_filtering} && $opts->{enable_search};
+    _add_arg(
+        func_meta   => $func_meta,
+        langs       => $langs,
+        name        => 'query_boolean',
+        aliases     => $opts->{query_boolean_aliases},
+        type        => ['str*', {in=>['and','or']}],
+        default     => $opts->{default_query_boolean} // 'and',
+        cat_name    => 'filtering',
+        cat_text    => N__('filtering'),
+        summary     => N__("Whether records must match all search queries ('and') or just one ('or')"),
     ) if $opts->{enable_filtering} && $opts->{enable_search};
 
     # add filter arguments for each table field
@@ -1344,7 +1359,7 @@ Can be used to supply default filters, e.g.
 _
         },
         default_query_boolean => {
-            schema => ['str', in=>['and', 'or']],
+            schema => ['str', {in=>['and', 'or']}],
             default => 'and',
             summary => "Specify default for --query-boolean option",
         },
@@ -1569,6 +1584,7 @@ sub gen_read_table_func {
         queries_aliases            => $args{queries_aliases} // {q=>{}},
 
         default_query_boolean      => $args{default_query_boolean} // 'and',
+        query_boolean_aliases      => $args{query_boolean_aliases} // {and=>{is_flag=>1, summary=>"Shortcut for --query-boolean=and", code=>sub{$_[0]{query_boolean}='and'}}, or=>{is_flag=>1, summary=>"Shortcut for --query-boolean=or", code=>sub{$_[0]{query_boolean}='or'}}},
 
         enable_filtering           => $args{enable_filtering} // 1,
         enable_search              => $args{enable_search} // 1,
