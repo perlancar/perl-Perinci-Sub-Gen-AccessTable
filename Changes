@@ -1,3 +1,8 @@
+0.589   2022-11-02  Released-By: PERLANCAR; Urgency: medium
+
+        - [bugfix] Forgot to generate 'query_boolean' argument.
+
+
 0.588   2022-11-02  Released-By: PERLANCAR; Urgency: medium; Backward-Incompatible: yes
 
         - [incompatible change] Change generated 'query' (str) argument to
