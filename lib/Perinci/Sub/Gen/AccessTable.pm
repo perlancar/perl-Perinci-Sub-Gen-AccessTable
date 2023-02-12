@@ -1258,12 +1258,14 @@ mentioned in filter arguments).
 _
         },
         table_spec => {
-            req => 1,
             schema => 'hash*',
             summary => 'Table specification',
             description => <<'_',
 
-See `TableDef` for more details.
+Required, unless `table_data` argument is a <pm:TableData> object, in which case
+table spec will be retrieved from the object if not supplied.
+
+See <pm:TableDef> for more details.
 
 A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
 field specification with field name as keys, while 'pk' specifies which field is
