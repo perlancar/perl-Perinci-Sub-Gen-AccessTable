@@ -1505,7 +1505,7 @@ You can instruct the generated function to execute codes in various stages by
 using hooks. Currently available hooks are: `before_parse_query`,
 `after_parse_query`, `before_fetch_data`, `after_fetch_data`, `before_return`.
 Hooks will be passed the function arguments as well as one or more additional
-ones. All hooks will get `_stage` (name of stage) and `_func_res` (function
+ones. All hooks will get `_stage` (name of stage) and `_func_args` (function
 arguments, but as hash reference so you can modify it). `after_parse_query` and
 later hooks will also get `_parse_res` (parse result). `before_fetch_data` and
 later will also get `_query`. `after_fetch_data` and later will also get
